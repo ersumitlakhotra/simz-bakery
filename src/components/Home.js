@@ -19,7 +19,7 @@ import BabyShowerCakeDetail from "../cards/babyshower.jsx";
 
 
 export default function Home() {
-    const TOTAL_FRAMES = 839;
+    const TOTAL_FRAMES = 900;
     const INITIAL_FRAMES = 100; // 839
     const BATCH_SIZE = 50;
     const [frame, setFrame] = useState(1);
