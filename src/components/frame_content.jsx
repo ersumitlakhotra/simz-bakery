@@ -1,4 +1,3 @@
-
 import { motion } from "framer-motion";
 
 export function FrameContent({
@@ -79,7 +78,6 @@ export function FrameContent({
     */
     if (frame <= enterEnd) {
         const progress = (frame - startFrame) / inFrames;
-
         const eased = 1 - Math.pow(1 - progress, 3);
 
         return (
@@ -146,7 +144,6 @@ export function FrameContent({
 
     /*
         FADE EXIT
-        Stays completely in place and fades away.
     */
     if (exitAnimation === "fade") {
         return (
@@ -175,9 +172,6 @@ export function FrameContent({
 
     /*
         DEFAULT EXIT
-        Existing behavior:
-        moves back toward the original direction
-        while fading away.
     */
     return (
         <motion.div
@@ -209,26 +203,44 @@ function Content({
     description,
 }) {
     return (
-    <div className="max-w-4xl text-white text-center mx-auto">
+        <div className="relative max-w-4xl mx-auto text-center">
 
-        <p className="text-[10px] md:text-xs font-semibold uppercase tracking-[0.4em] text-white/60">
-            {eyebrow}
-        </p>
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[260px] rounded-full bg-[#b83a5a]/12 blur-3xl pointer-events-none" />
 
-        <h2 className="mt-5 font-serif text-5xl md:text-6xl lg:text-7xl font-medium leading-[0.95] tracking-[-0.04em] text-white">
-            {title}
-        </h2>
+            <div className="relative">
 
-        <p className="mt-7 max-w-2xl mx-auto text-sm md:text-lg leading-7 text-white/65">
-            {description}
-        </p>
+                <div className="flex items-center justify-center gap-3">
 
-        <div className="mt-8 flex items-center justify-center gap-3">
-            <div className="w-12 h-px bg-[#c99a6b]" />
-            <div className="w-1.5 h-1.5 rounded-full bg-[#c99a6b]" />
-            <div className="w-12 h-px bg-[#c99a6b]" />
+                    <div className="w-10 md:w-14 h-px bg-[#d85c78]/80" />
+
+                    <p className="text-[10px] md:text-xs font-semibold uppercase tracking-[0.42em] text-[#f0a1b4] ">
+                        {eyebrow}
+                    </p>
+
+                    <div className="w-10 md:w-14 h-px bg-[#d85c78]/80" />
+
+                </div>
+
+                <h2 className="mt-6 font-serif text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-medium leading-[0.92] tracking-[-0.045em] text-white drop-shadow-[0_8px_25px_rgba(0,0,0,0.25)]">
+                    {title}
+                </h2>
+
+                <p className="mt-7 max-w-2xl mx-auto text-sm md:text-lg leading-7 font-medium tracking-[0.01em]">
+                    {description}
+                </p>
+
+                <div className="mt-8 flex items-center justify-center gap-3">
+
+                    <div className="w-12 h-px bg-[#d85c78]/70" />
+
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#d85c78] shadow-[0_0_14px_rgba(216,92,120,0.7)]" />
+
+                    <div className="w-12 h-px bg-[#d85c78]/70" />
+
+                </div>
+
+            </div>
+
         </div>
-
-    </div>
-);
-  }
+    );
+}

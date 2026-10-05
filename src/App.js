@@ -16,13 +16,13 @@ function App() {
       <Navbar />
 
       <main id="Home" className="relative w-full bg-black">
-        <section id="Home" className="relative h-[400vh]">
+        <section id="HomeScroll" className="relative h-[1500vh]">
           <div className="sticky top-0 h-screen overflow-hidden">
             <Home />
           </div>
         </section>
       </main>
-
+{/*
       <section id="cakes" className=" relative min-h-screen bg-white flex items-center justify-center">
         <FeaturedCakes />
       </section>
@@ -34,12 +34,13 @@ function App() {
           </div>
         </section>
       </main>
+      */}
 
       <section id="gallery" className="min-h-screen bg-white flex items-center justify-center">
         <Gallery />
       </section>
 
-      <section id="testimonials" className="min-h-screen bg-white flex items-center justify-center">
+      <section id="feedback" className="min-h-screen bg-white flex items-center justify-center">
         <Testimonials />
       </section>
 
@@ -51,7 +52,7 @@ function App() {
         <About />
       </section>
 
-      <section id="about" className="pb-8 bg-[#faf8f5] flex items-center justify-center">
+      <section id="about" className="pb-8 bg-white flex items-center justify-center">
         <p>© {new Date().getFullYear()} Simz Bakery. All rights reserved.</p>
         <p>Made with love, baked with care.</p>
       </section>

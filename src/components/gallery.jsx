@@ -1,7 +1,6 @@
-
-import React from "react";
-import { motion } from "framer-motion";
-import { ArrowUpRight } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowLeft, ArrowRight, ArrowUpRight, X } from "lucide-react";
 
 const galleryItems = [
     {
@@ -116,11 +115,12 @@ const itemVariants = {
     },
 };
 
-function GalleryItem({ item }) {
+function GalleryItem({ item, onClick }) {
     return (
         <motion.div
             variants={itemVariants}
-            className={`group relative overflow-hidden rounded-[24px] sm:rounded-[28px] ${
+            onClick={onClick}
+            className={`group relative overflow-hidden rounded-[24px] sm:rounded-[28px] cursor-pointer ${
                 item.size === "large"
                     ? "md:col-span-2 md:row-span-2"
                     : item.size === "wide"
@@ -145,7 +145,7 @@ function GalleryItem({ item }) {
                     className="w-full h-full object-cover transition-transform duration-[1400ms] ease-out group-hover:scale-110"
                 />
 
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent opacity-75 group-hover:opacity-90 transition-opacity duration-700" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#251018]/80 via-[#251018]/10 to-transparent opacity-70 group-hover:opacity-90 transition-opacity duration-700" />
 
                 <div className="absolute left-4 right-4 bottom-4 sm:left-6 sm:right-6 sm:bottom-6 md:left-7 md:right-7 md:bottom-7 text-white">
                     <div className="flex items-end justify-between gap-3">
@@ -159,113 +159,299 @@ function GalleryItem({ item }) {
                             </h3>
                         </div>
 
-                        <div className="flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-full bg-white/15 backdrop-blur-md border border-white/20 flex items-center justify-center opacity-90 md:opacity-0 md:group-hover:opacity-100 transition-all duration-500">
+                        <div className="flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-full bg-white/15 backdrop-blur-md border border-white/25 flex items-center justify-center opacity-90 md:opacity-0 md:group-hover:opacity-100 transition-all duration-500">
                             <ArrowUpRight size={15} strokeWidth={1.4} />
                         </div>
                     </div>
                 </div>
 
-                <div className="absolute inset-3 sm:inset-4 rounded-[18px] sm:rounded-[22px] border border-white/0 group-hover:border-white/20 transition-all duration-700 pointer-events-none" />
+                <div className="absolute inset-3 sm:inset-4 rounded-[18px] sm:rounded-[22px] border border-white/0 group-hover:border-white/30 transition-all duration-700 pointer-events-none" />
             </motion.div>
         </motion.div>
     );
 }
+ 
+function GalleryLightbox({ selectedIndex, onClose, onPrevious, onNext }) {
+    const item = galleryItems[selectedIndex];
 
-export default function Gallery() {
+    useEffect(() => {
+        const handleKeyDown = (event) => {
+            if (event.key === "Escape") {
+                onClose();
+            }
+
+            if (event.key === "ArrowLeft") {
+                onPrevious();
+            }
+
+            if (event.key === "ArrowRight") {
+                onNext();
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+
+        return () => {
+            window.removeEventListener("keydown", handleKeyDown);
+        };
+    }, [onClose, onPrevious, onNext]);
+
+    useEffect(() => {
+        const originalOverflow = document.body.style.overflow;
+        document.body.style.overflow = "hidden";
+
+        return () => {
+            document.body.style.overflow = originalOverflow;
+        };
+    }, []);
+
     return (
-        <section className="relative w-full overflow-hidden bg-[#faf8f5] py-20 sm:py-24 md:py-32 lg:py-36">
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.35 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden"
+        >
+            {/* Visible Blurred Website Background */}
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={onClose}
+                className="absolute inset-0 bg-[#351520]/35 backdrop-blur-md cursor-pointer"
+            />
+
+            {/* Soft Rose Glow */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                <div className="absolute left-[-20%] top-[10%] w-[320px] h-[320px] sm:w-[450px] sm:h-[450px] rounded-full bg-[#d6a77a]/10 blur-[100px] sm:blur-[130px]" />
-
-                <div className="absolute right-[-20%] bottom-[10%] w-[350px] h-[350px] sm:w-[500px] sm:h-[500px] rounded-full bg-[#b98a68]/10 blur-[110px] sm:blur-[140px]" />
+                <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full bg-[#f6c4d2]/15 blur-[130px]" />
+                <div className="absolute bottom-[-20%] right-[-10%] w-[550px] h-[550px] rounded-full bg-[#d98fa5]/20 blur-[140px]" />
             </div>
 
-            <div className="relative z-10 w-full max-w-[1500px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
-                <motion.div
-                    initial={{ opacity: 0, y: 35 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, amount: 0.2 }}
-                    transition={{
-                        duration: 0.9,
-                        ease: [0.22, 1, 0.36, 1],
-                    }}
-                    className="w-full max-w-4xl mb-12 sm:mb-14 md:mb-20"
+            {/* Close Button */}
+            <button
+                onClick={onClose}
+                className="absolute z-30 top-5 right-5 sm:top-7 sm:right-7 w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 text-white flex items-center justify-center hover:bg-white hover:text-[#4d3038] transition-all duration-300"
+            >
+                <X size={19} strokeWidth={1.5} />
+            </button>
+
+            {/* Counter */}
+            <div className="absolute z-30 top-6 left-6 sm:top-8 sm:left-8 text-white/70 text-[9px] uppercase tracking-[0.3em]">
+                {String(selectedIndex + 1).padStart(2, "0")} / {String(galleryItems.length).padStart(2, "0")}
+            </div>
+
+            {/* Main Popup */}
+            <div className="relative z-20 w-full h-full flex items-center justify-center px-5 sm:px-12 lg:px-24">
+                {/* Previous */}
+                <button
+                    onClick={onPrevious}
+                    className="absolute z-30 left-4 sm:left-7 lg:left-12 w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 text-white flex items-center justify-center hover:bg-white hover:text-[#4d3038] transition-all duration-300"
                 >
-                    <div className="flex items-center gap-3 mb-5 sm:mb-6">
-                        <span className="w-7 sm:w-8 h-px bg-[#a76f3f]/50" />
+                    <ArrowLeft size={18} strokeWidth={1.4} />
+                </button>
 
-                        <span className="text-[8px] sm:text-[9px] uppercase tracking-[0.3em] sm:tracking-[0.35em] text-[#a76f3f]">
-                            The Gallery
-                        </span>
-                    </div>
-
-                    <h2 className="font-serif text-[42px] leading-[0.94] tracking-[-0.04em] text-[#47291d] sm:text-5xl md:text-6xl lg:text-7xl xl:text-[82px]">
-                        A little sweetness,
-                        <span className="block text-[#a76f3f] italic">
-                            beautifully captured.
-                        </span>
-                    </h2>
-
-                    <p className="mt-6 sm:mt-7 max-w-xl text-[13px] sm:text-sm md:text-base leading-6 sm:leading-7 text-[#806655]">
-                        From intimate celebrations to unforgettable
-                        milestones, every Simz Bakery creation is made to
-                        become part of your sweetest memories.
-                    </p>
-                </motion.div>
-
-                <motion.div
-                    variants={containerVariants}
-                    initial="hidden"
-                    whileInView="visible"
-                    viewport={{
-                        once: true,
-                        amount: 0.05,
-                    }}
-                    className="grid grid-cols-1 md:grid-cols-4 auto-rows-[300px] sm:auto-rows-[340px] md:auto-rows-[250px] lg:auto-rows-[270px] gap-3 sm:gap-4 md:gap-5"
-                >
-                    {galleryItems.map((item) => (
-                        <GalleryItem
-                            key={item.id}
-                            item={item}
-                        />
-                    ))}
-                </motion.div>
-
-                <motion.div
-                    initial={{ opacity: 0, y: 25 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, amount: 0.3 }}
-                    transition={{
-                        duration: 0.8,
-                        delay: 0.1,
-                    }}
-                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mt-10 sm:mt-12 md:mt-16"
-                >
-                    <div>
-                        <p className="text-[8px] sm:text-[9px] uppercase tracking-[0.3em] text-[#a76f3f]">
-                            Made with intention
-                        </p>
-
-                        <p className="mt-2 text-xs sm:text-sm text-[#806655]">
-                            Every cake has a story. Let's create yours.
-                        </p>
-                    </div>
-
-                    <button className="group flex items-center gap-3 text-[10px] sm:text-xs uppercase tracking-[0.2em] sm:tracking-[0.22em] text-[#47291d]">
-                        <span className="border-b border-[#47291d]/25 pb-2 group-hover:border-[#47291d] transition-colors duration-300">
-                            Explore our creations
-                        </span>
-
-                        <span className="w-9 h-9 rounded-full border border-[#47291d]/15 flex items-center justify-center group-hover:bg-[#47291d] group-hover:text-white transition-all duration-500">
-                            <ArrowUpRight
-                                size={15}
-                                strokeWidth={1.5}
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={selectedIndex}
+                        initial={{ opacity: 0, x: 70, scale: 0.96 }}
+                        animate={{ opacity: 1, x: 0, scale: 1 }}
+                        exit={{ opacity: 0, x: -70, scale: 0.96 }}
+                        transition={{
+                            duration: 0.45,
+                            ease: [0.22, 1, 0.36, 1],
+                        }}
+                        className="relative w-full max-w-[1100px] h-[72vh] sm:h-[78vh] flex items-center justify-center"
+                    >
+                        <div className="relative w-full h-full rounded-[24px] sm:rounded-[32px] overflow-hidden border border-white/30 bg-white/10 backdrop-blur-sm shadow-[0_35px_120px_rgba(0,0,0,0.3)]">
+                            <img
+                                src={item.image}
+                                alt={item.title}
+                                className="absolute inset-0 w-full h-full object-contain"
                             />
-                        </span>
-                    </button>
-                </motion.div>
+
+                            <div className="absolute inset-0 bg-gradient-to-t from-[#241018]/80 via-transparent to-transparent pointer-events-none" />
+
+                            <div className="absolute left-6 right-6 bottom-6 sm:left-9 sm:right-9 sm:bottom-9 text-white">
+                                <p className="text-[8px] sm:text-[9px] uppercase tracking-[0.3em] text-white/65 mb-2">
+                                    {item.category}
+                                </p>
+
+                                <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-6xl tracking-[-0.03em]">
+                                    {item.title}
+                                </h2>
+                            </div>
+                        </div>
+                    </motion.div>
+                </AnimatePresence>
+
+                {/* Next */}
+                <button
+                    onClick={onNext}
+                    className="absolute z-30 right-4 sm:right-7 lg:right-12 w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 text-white flex items-center justify-center hover:bg-white hover:text-[#4d3038] transition-all duration-300"
+                >
+                    <ArrowRight size={18} strokeWidth={1.4} />
+                </button>
             </div>
-        </section>
+
+            {/* Keyboard Hint */}
+            <div className="absolute z-30 bottom-5 left-1/2 -translate-x-1/2 text-[8px] uppercase tracking-[0.25em] text-white/40 hidden sm:block">
+                Use ← → to explore
+            </div>
+        </motion.div>
     );
 }
 
+
+export default function Gallery() {
+    const [selectedIndex, setSelectedIndex] = useState(null);
+
+    const openGallery = (index) => {
+        setSelectedIndex(index);
+    };
+
+    const closeGallery = () => {
+        setSelectedIndex(null);
+    };
+
+    const showPrevious = () => {
+        setSelectedIndex((current) => {
+            if (current === null) return null;
+            return current === 0 ? galleryItems.length - 1 : current - 1;
+        });
+    };
+
+    const showNext = () => {
+        setSelectedIndex((current) => {
+            if (current === null) return null;
+            return current === galleryItems.length - 1 ? 0 : current + 1;
+        });
+    };
+
+    return (
+        <>
+            <section className="relative w-full overflow-hidden bg-[#d98fa5]/90 py-20 sm:py-24 md:py-32 lg:py-36">
+
+                {/* Glossy Royal Rose Atmosphere */}
+                <div className="absolute inset-0 pointer-events-none overflow-hidden">
+
+                    <div className="absolute inset-0 bg-[#d98fa5]/90" />
+
+                    <div className="absolute top-[-25%] left-[-10%] w-[600px] h-[500px] rounded-full bg-white/18 blur-[120px]" />
+
+                    <div className="absolute top-[20%] right-[-15%] w-[500px] h-[500px] rounded-full bg-[#f6c4d2]/20 blur-[130px]" />
+
+                    <div className="absolute bottom-[-25%] left-[10%] w-[600px] h-[450px] rounded-full bg-[#9f5069]/20 blur-[140px]" />
+
+                    <div className="absolute bottom-[-15%] right-[-10%] w-[500px] h-[450px] rounded-full bg-white/10 blur-[120px]" />
+
+                    <div className="absolute top-[-30%] left-[42%] w-[14%] h-[160%] rotate-[22deg] bg-white/10 blur-[35px]" />
+
+                </div>
+
+                <div className="relative z-10 w-full max-w-[1500px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
+
+                    {/* Header */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 35 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true, amount: 0.2 }}
+                        transition={{
+                            duration: 0.9,
+                            ease: [0.22, 1, 0.36, 1],
+                        }}
+                        className="w-full max-w-4xl mb-12 sm:mb-14 md:mb-20"
+                    >
+                        <div className="flex items-center gap-3 mb-5 sm:mb-6">
+                            <span className="w-7 sm:w-8 h-px bg-white/55" />
+
+                            <span className="text-[8px] sm:text-[9px] uppercase tracking-[0.3em] sm:tracking-[0.35em] text-white/80">
+                                The Gallery
+                            </span>
+                        </div>
+
+                        <h2 className="font-serif text-[42px] leading-[0.94] tracking-[-0.04em] text-white sm:text-5xl md:text-6xl lg:text-7xl xl:text-[82px]">
+                            A little sweetness,
+                            <span className="block text-[#fff1f5] italic">
+                                beautifully captured.
+                            </span>
+                        </h2>
+
+                        <p className="mt-6 sm:mt-7 max-w-xl text-[13px] sm:text-sm md:text-base leading-6 sm:leading-7 text-white/75">
+                            From intimate celebrations to unforgettable
+                            milestones, every Simz Bakery creation is made to
+                            become part of your sweetest memories.
+                        </p>
+                    </motion.div>
+
+                    {/* Gallery Grid */}
+                    <motion.div
+                        variants={containerVariants}
+                        initial="hidden"
+                        whileInView="visible"
+                        viewport={{
+                            once: true,
+                            amount: 0.05,
+                        }}
+                        className="grid grid-cols-1 md:grid-cols-4 auto-rows-[300px] sm:auto-rows-[340px] md:auto-rows-[250px] lg:auto-rows-[270px] gap-3 sm:gap-4 md:gap-5"
+                    >
+                        {galleryItems.map((item, index) => (
+                            <GalleryItem
+                                key={item.id}
+                                item={item}
+                                onClick={() => openGallery(index)}
+                            />
+                        ))}
+                    </motion.div>
+
+                    {/* Bottom */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 25 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true, amount: 0.3 }}
+                        transition={{
+                            duration: 0.8,
+                            delay: 0.1,
+                        }}
+                        className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mt-10 sm:mt-12 md:mt-16"
+                    >
+                        <div>
+                            <p className="text-[8px] sm:text-[9px] uppercase tracking-[0.3em] text-white/65">
+                                Made with intention
+                            </p>
+
+                            <p className="mt-2 text-xs sm:text-sm text-white/70">
+                                Every cake has a story. Let's create yours.
+                            </p>
+                        </div>
+
+                        <button
+                            onClick={() => openGallery(0)}
+                            className="group flex items-center gap-3 text-[10px] sm:text-xs uppercase tracking-[0.2em] sm:tracking-[0.22em] text-white"
+                        >
+                            <span className="border-b border-white/30 pb-2 group-hover:border-white transition-colors duration-300">
+                                Explore our creations
+                            </span>
+
+                            <span className="w-9 h-9 rounded-full border border-white/25 bg-white/10 backdrop-blur-md flex items-center justify-center group-hover:bg-white group-hover:text-[#8f304d] transition-all duration-500">
+                                <ArrowUpRight size={15} strokeWidth={1.5} />
+                            </span>
+                        </button>
+                    </motion.div>
+
+                </div>
+            </section>
+
+            <AnimatePresence>
+                {selectedIndex !== null && (
+                    <GalleryLightbox
+                        selectedIndex={selectedIndex}
+                        onClose={closeGallery}
+                        onPrevious={showPrevious}
+                        onNext={showNext}
+                    />
+                )}
+            </AnimatePresence>
+        </>
+    );
+}

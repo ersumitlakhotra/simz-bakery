@@ -11,11 +11,16 @@ import {
 } from "lucide-react";
 import Hero from "./Hero.jsx";
 import WhyChooseUs from "./whychooseus.jsx";
+import BirthdayCakeCard from "../cards/birthday.jsx";
+import CustomCakeDetail from "../cards/custom.jsx";
+import MilestoneCakeDetail from "../cards/milestone.jsx";
+import WeddingCakeDetail from "../cards/wedding.jsx";
+import BabyShowerCakeDetail from "../cards/babyshower.jsx";
 
 
 export default function Home() {
-    const TOTAL_FRAMES = 342;
-    const INITIAL_FRAMES = 100; // 53
+    const TOTAL_FRAMES = 900;
+    const INITIAL_FRAMES = 100; // 839
     const BATCH_SIZE = 50;
     const [frame, setFrame] = useState(1);
     const [loadedFrames, setLoadedFrames] = useState(0);
@@ -36,7 +41,7 @@ export default function Home() {
     const nextBatchRef = useRef(INITIAL_FRAMES + 1);
 
     const getFramePath = (frameNumber) => {
-        return `/frames/frame_${String(frameNumber).padStart(4, "0")}.jpg`;
+        return `/frames/frame_${String(frameNumber).padStart(4, "0")}.webp`;
     };
 
     const loadFrame = (frameNumber) => {
@@ -243,7 +248,7 @@ export default function Home() {
                 return;
             }
 
-     
+
 
             const relativeScroll =
                 window.scrollY -
@@ -254,7 +259,7 @@ export default function Home() {
                 Math.min(
                     1,
                     relativeScroll /
-                        scrollDistance
+                    scrollDistance
                 )
             );
 
@@ -262,7 +267,7 @@ export default function Home() {
             const calculatedFrame =
                 1 +
                 progress *
-                    (TOTAL_FRAMES - 1);
+                (TOTAL_FRAMES - 1);
 
             targetFrame.current =
                 calculatedFrame;
@@ -300,7 +305,7 @@ export default function Home() {
 
             if (
                 imageCache.current[
-                    requestedFrame - 1
+                requestedFrame - 1
                 ]
             ) {
                 if (
@@ -315,7 +320,7 @@ export default function Home() {
                     );
                 }
             } else {
-         
+
 
                 let fallbackFrame =
                     lastFrame.current;
@@ -330,9 +335,9 @@ export default function Home() {
 
                     if (
                         candidate <=
-                            TOTAL_FRAMES &&
+                        TOTAL_FRAMES &&
                         imageCache.current[
-                            candidate - 1
+                        candidate - 1
                         ]
                     ) {
                         fallbackFrame =
@@ -348,7 +353,7 @@ export default function Home() {
 
                 if (
                     !imageCache.current[
-                        fallbackFrame - 1
+                    fallbackFrame - 1
                     ]
                 ) {
                     for (
@@ -363,7 +368,7 @@ export default function Home() {
                         if (
                             candidate >= 1 &&
                             imageCache.current[
-                                candidate - 1
+                            candidate - 1
                             ]
                         ) {
                             fallbackFrame =
@@ -425,7 +430,7 @@ export default function Home() {
 
     const currentImage =
         imageCache.current[
-            frame - 1
+        frame - 1
         ];
 
     const currentImageSrc =
@@ -443,8 +448,7 @@ export default function Home() {
             )
         );
 
-    if (!isReady) 
-        {
+    if (!isReady) {
         return (
             <ExperienceLoader
                 progress={loadingPercentage}
@@ -466,43 +470,49 @@ export default function Home() {
 
             <Hero frame={frame} />
 
-            <WhyChooseUs frame={frame} />
-           
+
             <FrameContent
                 frame={frame}
-                startFrame={120}
+                startFrame={60}
                 position="bottom-center"
                 eyebrow="THE SIMZ SIGNATURE"
                 title="Where every layer tells a story!"
                 description="From the first fold of batter to the final delicate detail, every Simz cake is crafted with patience, precision, and a love for beautiful things."
             />
-                   
+
             <FrameContent
                 frame={frame}
-                startFrame={180}
+                startFrame={120}
                 position="bottom-center"
                 eyebrow="MADE TO BE SAVOURED"
                 title="A beautiful cake should taste even better!"
                 description="Light, rich, creamy, indulgent — every flavour is carefully balanced so the last bite is just as memorable as the first."
             />
-        
+
             <FrameContent
                 frame={frame}
-                startFrame={240}
+                startFrame={190}
                 position="bottom-center"
                 eyebrow="YOUR VISION, OUR CRAFT"
                 title="Imagine it. We'll bake it!"
                 description="Tell us what you're celebrating, show us what inspires you, and we'll transform your ideas into a cake that feels unmistakably yours."
-            />    
-           
+            />
+
             <FrameContent
                 frame={frame}
-                startFrame={290}
+                startFrame={260}
                 position="bottom-center"
                 eyebrow="SWEETENING LIFE'S MOMENTS"
                 title="Some moments deserve more than a cake!"
                 description="They deserve something beautiful. Something personal. Something everyone remembers long after the candles are gone."
-            />     
+            />
+
+
+            <BirthdayCakeCard frame={frame} />
+            <CustomCakeDetail frame={frame} />
+            <MilestoneCakeDetail frame={frame} />
+            <WeddingCakeDetail  frame={frame} />
+            <BabyShowerCakeDetail frame={frame} />
         </>
     );
 }

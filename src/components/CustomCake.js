@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import {
     motion,
@@ -123,9 +122,9 @@ const cakes = [
 ];
 
 
-/* ---------------------------------------------
-   ORBIT ITEM
---------------------------------------------- */
+/* --------------------------------------------------
+   CATEGORY ORBIT ITEM
+-------------------------------------------------- */
 
 function OrbitCake({
     cake,
@@ -145,8 +144,10 @@ function OrbitCake({
         (index / cakes.length) * Math.PI * 2 -
         Math.PI / 2;
 
-    const x = 50 + Math.cos(angle) * 45;
-    const y = 50 + Math.sin(angle) * 45;
+    const radius = 43;
+
+    const x = 50 + Math.cos(angle) * radius;
+    const y = 50 + Math.sin(angle) * radius;
 
     const isSelected = selectedCake === index;
 
@@ -167,69 +168,63 @@ function OrbitCake({
                 <motion.button
                     onClick={() => onSelect(index)}
                     animate={{
-                        scale: isSelected ? 1.12 : 1,
+                        scale: isSelected ? 1.15 : 1,
                     }}
                     whileHover={{
-                        scale: isSelected ? 1.18 : 1.08,
+                        scale: isSelected ? 1.22 : 1.1,
                     }}
                     whileTap={{
-                        scale: 0.94,
+                        scale: 0.92,
                     }}
-                    className="group relative flex flex-col items-center justify-center"
+                    transition={{
+                        type: "spring",
+                        stiffness: 280,
+                        damping: 20,
+                    }}
+                    className="group relative flex items-center justify-center"
                     aria-label={`View ${cake.category} cake`}
                 >
 
-                    {/* Icon */}
-                    <div
-                        className={`relative flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full transition-all duration-500 ${
-                            isSelected
-                                ? "bg-[#47291d] shadow-[0_16px_40px_rgba(71,41,29,0.28)]"
-                                : "bg-white shadow-[0_8px_25px_rgba(71,41,29,0.12)] border border-[#b27b45]/15 group-hover:border-[#b27b45]/40"
-                        }`}
-                    >
-
-                        {/* Active Ring */}
-                        {isSelected && (
-                            <>
-                                <div className="absolute inset-[-5px] rounded-full border border-[#a76f3f]/35" />
-                                <div className="absolute inset-[-9px] rounded-full border border-[#a76f3f]/10" />
-                            </>
-                        )}
-
-                        <Icon
-                            size={25}
-                            strokeWidth={1.45}
-                            className={`relative z-10 transition-colors duration-500 ${
-                                isSelected
-                                    ? "text-[#f6e8da]"
-                                    : "text-[#806655] group-hover:text-[#a76f3f]"
-                            }`}
-                        />
-
-                    </div>
-
-
-                    {/* Category */}
-                    <div
-                        className={`absolute top-[calc(100%+9px)] left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-2.5 py-1 transition-all duration-500 ${
-                            isSelected
-                                ? "bg-[#47291d] text-[#f6e8da] shadow-[0_8px_20px_rgba(71,41,29,0.16)] opacity-100"
-                                : "bg-white/95 text-[#806655] border border-[#b27b45]/10 opacity-80 group-hover:opacity-100"
-                        }`}
-                    >
-                        <span className="text-[7px] sm:text-[8px] uppercase tracking-[0.16em]">
-                            {cake.category}
-                        </span>
-                    </div>
-
-
-                    {/* Active Dot */}
+                    {/* Glow */}
                     {isSelected && (
-                        <motion.span
-                            layoutId="activeCakeDot"
-                            className="absolute -top-2 -right-1 w-2 h-2 rounded-full bg-[#a76f3f] ring-2 ring-[#f8f3ed]"
+                        <motion.div
+                            layoutId="activeCakeGlow"
+                            className="absolute inset-[-12px] rounded-full bg-[#c74663]/15 blur-xl"
                         />
                     )}
+
+                    {/* Icon Circle */}
+                    <div
+                        className={`relative flex items-center justify-center w-11 h-11 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full transition-all duration-500 ${
+                            isSelected
+                                ? "bg-[#b83a5a] text-white shadow-[0_15px_40px_rgba(184,58,90,0.28)]"
+                                : "bg-white/90 text-[#73555c] border border-[#ead4da] shadow-[0_8px_25px_rgba(91,42,55,0.08)] group-hover:border-[#d85c78]/40 group-hover:text-[#b83a5a]"
+                        }`}
+                    >
+
+                        <Icon
+                            size={22}
+                            strokeWidth={1.45}
+                            className="relative z-10"
+                        />
+
+                    </div>
+
+                    {/* Category */}
+                    <motion.div
+                        animate={{
+                            opacity: isSelected ? 1 : 0,
+                            y: isSelected ? 0 : 4,
+                        }}
+                        transition={{
+                            duration: 0.25,
+                        }}
+                        className="absolute top-[calc(100%+9px)] left-1/2 -translate-x-1/2 whitespace-nowrap pointer-events-none"
+                    >
+                        <span className="px-3 py-1.5 rounded-full bg-white/90 backdrop-blur-xl border border-[#efd8df] shadow-[0_8px_25px_rgba(91,42,55,0.1)] text-[#b83a5a] text-[7px] uppercase tracking-[0.18em]">
+                            {cake.category}
+                        </span>
+                    </motion.div>
 
                 </motion.button>
             </motion.div>
@@ -238,11 +233,12 @@ function OrbitCake({
 }
 
 
-/* ---------------------------------------------
+/* --------------------------------------------------
    MAIN COMPONENT
---------------------------------------------- */
+-------------------------------------------------- */
 
 export default function CustomCake({ sectionRef }) {
+
     const [selectedCake, setSelectedCake] = useState(0);
     const [direction, setDirection] = useState(1);
 
@@ -251,10 +247,13 @@ export default function CustomCake({ sectionRef }) {
         offset: ["start start", "end end"],
     });
 
+    /*
+        Faster response than the previous version.
+    */
     const smoothProgress = useSpring(scrollYProgress, {
-        stiffness: 80,
-        damping: 28,
-        mass: 0.25,
+        stiffness: 140,
+        damping: 24,
+        mass: 0.18,
     });
 
     const orbitRotation = useTransform(
@@ -265,8 +264,8 @@ export default function CustomCake({ sectionRef }) {
 
     const cakeScale = useTransform(
         smoothProgress,
-        [0, 0.04, 0.5, 0.96, 1],
-        [0.96, 1, 1, 1, 0.97]
+        [0, 0.05, 0.5, 0.95, 1],
+        [0.94, 1, 1, 1, 0.96]
     );
 
     const progressWidth = useTransform(
@@ -276,14 +275,16 @@ export default function CustomCake({ sectionRef }) {
     );
 
 
-    /* ---------------------------------------------
-       SCROLL → SELECT CAKE
-    --------------------------------------------- */
+    /* --------------------------------------------------
+       SCROLL → SELECT
+    -------------------------------------------------- */
 
     useEffect(() => {
+
         const unsubscribe = scrollYProgress.on(
             "change",
             (progress) => {
+
                 const next = Math.min(
                     cakes.length - 1,
                     Math.max(
@@ -295,7 +296,9 @@ export default function CustomCake({ sectionRef }) {
                 );
 
                 setSelectedCake((current) => {
+
                     if (current !== next) {
+
                         setDirection(
                             next > current ? 1 : -1
                         );
@@ -309,15 +312,16 @@ export default function CustomCake({ sectionRef }) {
         );
 
         return () => unsubscribe();
+
     }, [scrollYProgress]);
 
 
-    /* ---------------------------------------------
-       CLICK ORBIT ITEM
-       CLICK → SCROLL → SELECT
-    --------------------------------------------- */
+    /* --------------------------------------------------
+       CLICK → SCROLL
+    -------------------------------------------------- */
 
     const scrollToCake = (index) => {
+
         const section = sectionRef.current;
 
         if (!section) return;
@@ -353,26 +357,32 @@ export default function CustomCake({ sectionRef }) {
     return (
         <>
 
-            {/* BACKGROUND */}
+            {/* --------------------------------------------------
+                BACKGROUND
+            -------------------------------------------------- */}
 
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
 
-                <div className="absolute left-1/2 top-1/2 w-[650px] h-[650px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#d6a77a]/10 blur-[120px]" />
+                <div className="absolute left-1/2 top-1/2 w-[700px] h-[700px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#c74663]/[0.055] blur-[130px]" />
 
-                <div className="absolute left-1/2 top-1/2 w-[360px] h-[360px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#b27b45]/5" />
+                <div className="absolute left-1/2 top-1/2 w-[520px] h-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#d85c78]/[0.08]" />
+
+                <div className="absolute left-1/2 top-1/2 w-[400px] h-[400px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#d85c78]/[0.05]" />
 
             </div>
 
 
-            {/* TOP LABEL */}
+            {/* --------------------------------------------------
+                TOP LABEL
+            -------------------------------------------------- */}
 
             <div className="absolute top-8 md:top-10 left-6 md:left-12 z-50">
 
                 <div className="flex items-center gap-3">
 
-                    <span className="w-8 h-px bg-[#a76f3f]" />
+                    <span className="w-8 md:w-12 h-px bg-[#d85c78]" />
 
-                    <span className="text-[10px] md:text-xs uppercase tracking-[0.35em] text-[#806655]">
+                    <span className="text-[9px] md:text-[10px] uppercase tracking-[0.38em] text-[#b83a5a] font-semibold">
                         Custom Cakes
                     </span>
 
@@ -381,14 +391,18 @@ export default function CustomCake({ sectionRef }) {
             </div>
 
 
-            {/* MAIN COMPOSITION */}
+            {/* --------------------------------------------------
+                MAIN COMPOSITION
+            -------------------------------------------------- */}
 
             <div className="absolute inset-0 flex items-center justify-center">
 
 
-                {/* LEFT */}
+                {/* --------------------------------------------------
+                    LEFT INFORMATION
+                -------------------------------------------------- */}
 
-                <div className="absolute left-6 md:left-12 lg:left-[7vw] top-1/2 -translate-y-1/2 z-30 w-[230px] xl:w-[280px] hidden md:block">
+                <div className="absolute left-6 md:left-10 lg:left-[6vw] xl:left-[8vw] top-1/2 -translate-y-1/2 z-30 w-[220px] xl:w-[280px] hidden md:block">
 
                     <motion.p
                         initial={{
@@ -403,9 +417,9 @@ export default function CustomCake({ sectionRef }) {
                             once: true,
                         }}
                         transition={{
-                            duration: 0.8,
+                            duration: 0.7,
                         }}
-                        className="text-[10px] uppercase tracking-[0.3em] text-[#a76f3f] mb-5"
+                        className="text-[9px] uppercase tracking-[0.32em] text-[#d85c78] mb-5 font-semibold"
                     >
                         Made for your moment
                     </motion.p>
@@ -414,7 +428,7 @@ export default function CustomCake({ sectionRef }) {
                     <motion.h2
                         initial={{
                             opacity: 0,
-                            y: 30,
+                            y: 25,
                         }}
                         whileInView={{
                             opacity: 1,
@@ -424,14 +438,14 @@ export default function CustomCake({ sectionRef }) {
                             once: true,
                         }}
                         transition={{
-                            duration: 0.9,
-                            delay: 0.1,
+                            duration: 0.8,
+                            delay: 0.08,
                         }}
-                        className="font-serif text-4xl xl:text-5xl text-[#47291d] leading-[1.02]"
+                        className="font-serif text-4xl xl:text-5xl text-[#b83a5a] leading-[0.98] tracking-[-0.035em]"
                     >
                         Imagine it.
                         <br />
-                        <span className="italic text-[#a76f3f]">
+                        <span className="italic text-[#d85c78]">
                             We'll create it.
                         </span>
                     </motion.h2>
@@ -448,17 +462,17 @@ export default function CustomCake({ sectionRef }) {
                             once: true,
                         }}
                         transition={{
-                            duration: 0.8,
-                            delay: 0.25,
+                            duration: 0.7,
+                            delay: 0.2,
                         }}
-                        className="mt-6 text-sm leading-6 text-[#806655] max-w-[250px]"
+                        className="mt-6 text-sm leading-6 text-[#624b51] max-w-[250px] font-light"
                     >
                         From intimate celebrations to unforgettable moments,
                         every cake begins with your story.
                     </motion.p>
 
 
-                    <div className="mt-9 space-y-3">
+                    <div className="mt-8 space-y-3">
 
                         {[
                             "Choose your flavor",
@@ -471,16 +485,16 @@ export default function CustomCake({ sectionRef }) {
                                 className="flex items-center gap-3"
                             >
 
-                                <div className="w-5 h-5 rounded-full border border-[#b27b45]/30 flex items-center justify-center">
+                                <div className="w-5 h-5 rounded-full border border-[#d85c78]/30 bg-white/60 flex items-center justify-center">
 
                                     <Check
-                                        size={11}
-                                        className="text-[#a76f3f]"
+                                        size={10}
+                                        className="text-[#c74663]"
                                     />
 
                                 </div>
 
-                                <span className="text-xs text-[#806655]">
+                                <span className="text-xs text-[#624b51]">
                                     {item}
                                 </span>
 
@@ -493,9 +507,11 @@ export default function CustomCake({ sectionRef }) {
                 </div>
 
 
-                {/* CENTER */}
+                {/* --------------------------------------------------
+                    CENTER
+                -------------------------------------------------- */}
 
-                <div className="relative w-[88vw] max-w-[680px] aspect-square flex items-center justify-center">
+                <div className="relative w-[86vw] max-w-[700px] aspect-square flex items-center justify-center">
 
 
                     {/* OUTER ORBIT */}
@@ -504,7 +520,7 @@ export default function CustomCake({ sectionRef }) {
                         style={{
                             rotate: orbitRotation,
                         }}
-                        className="absolute inset-0 rounded-full border border-[#b27b45]/20"
+                        className="absolute inset-0 rounded-full border border-[#d85c78]/15"
                     />
 
 
@@ -514,7 +530,7 @@ export default function CustomCake({ sectionRef }) {
                         style={{
                             rotate: orbitRotation,
                         }}
-                        className="absolute inset-[7%] rounded-full border border-[#b27b45]/10"
+                        className="absolute inset-[10%] rounded-full border border-[#d85c78]/[0.07]"
                     />
 
 
@@ -528,6 +544,7 @@ export default function CustomCake({ sectionRef }) {
                     >
 
                         {cakes.map((cake, index) => (
+
                             <OrbitCake
                                 key={cake.id}
                                 cake={cake}
@@ -536,14 +553,30 @@ export default function CustomCake({ sectionRef }) {
                                 orbitRotation={orbitRotation}
                                 onSelect={scrollToCake}
                             />
+
                         ))}
 
                     </motion.div>
 
 
-                    {/* CENTER GLOW */}
+                    {/* CENTER HALO */}
 
-                    <div className="absolute w-[56%] aspect-square rounded-full bg-[#d6a77a]/10 blur-3xl pointer-events-none" />
+                    <motion.div
+                        animate={{
+                            scale: [1, 1.04, 1],
+                        }}
+                        transition={{
+                            duration: 4,
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                        }}
+                        className="absolute w-[61%] aspect-square rounded-full bg-[#c74663]/[0.07] blur-3xl pointer-events-none"
+                    />
+
+
+                    {/* CAKE SHADOW */}
+
+                    <div className="absolute bottom-[16%] w-[45%] h-[9%] rounded-full bg-[#5c2937]/15 blur-2xl pointer-events-none" />
 
 
                     {/* MAIN CAKE */}
@@ -552,7 +585,7 @@ export default function CustomCake({ sectionRef }) {
                         style={{
                             scale: cakeScale,
                         }}
-                        className="relative z-20 w-[55%] aspect-square rounded-full overflow-hidden shadow-[0_40px_100px_rgba(71,41,29,0.25)] bg-[#e8d8c8]"
+                        className="relative z-20 w-[58%] aspect-square rounded-full overflow-hidden bg-[#f6e7eb] shadow-[0_45px_120px_rgba(78,32,45,0.22),0_10px_35px_rgba(199,70,99,0.1)]"
                     >
 
                         <AnimatePresence
@@ -567,7 +600,7 @@ export default function CustomCake({ sectionRef }) {
                                 initial={{
                                     opacity: 0,
                                     scale: 1.08,
-                                    x: direction * 25,
+                                    x: direction * 35,
                                 }}
                                 animate={{
                                     opacity: 1,
@@ -576,17 +609,12 @@ export default function CustomCake({ sectionRef }) {
                                 }}
                                 exit={{
                                     opacity: 0,
-                                    scale: 0.94,
-                                    x: direction * -25,
+                                    scale: 0.96,
+                                    x: direction * -35,
                                 }}
                                 transition={{
-                                    duration: 0.7,
-                                    ease: [
-                                        0.22,
-                                        1,
-                                        0.36,
-                                        1,
-                                    ],
+                                    duration: 0.42,
+                                    ease: [0.22, 1, 0.36, 1],
                                 }}
                                 className="absolute inset-0"
                             >
@@ -597,44 +625,35 @@ export default function CustomCake({ sectionRef }) {
                                     className="w-full h-full object-cover"
                                 />
 
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/5" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-[#35151f]/65 via-transparent to-[#35151f]/5" />
 
-                                <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-6 text-white">
-
-                                    <p className="text-[8px] sm:text-[9px] uppercase tracking-[0.3em] text-white/70 mb-1.5">
-                                        {currentCake.category}
-                                    </p>
-
-                                    <h3 className="font-serif text-xl sm:text-2xl md:text-3xl">
-                                        {currentCake.name}
-                                    </h3>
-
-                                </div>
+                           
 
                             </motion.div>
 
                         </AnimatePresence>
 
 
-                        <div className="absolute inset-0 rounded-full ring-1 ring-white/40 pointer-events-none" />
+                        <div className="absolute inset-0 rounded-full ring-1 ring-white/50 pointer-events-none" />
 
-                        <div className="absolute inset-[3%] rounded-full ring-1 ring-white/10 pointer-events-none" />
+                        <div className="absolute inset-[3%] rounded-full ring-1 ring-white/15 pointer-events-none" />
 
                     </motion.div>
 
                 </div>
 
 
-                {/* RIGHT */}
+                {/* --------------------------------------------------
+                    RIGHT INFORMATION
+                -------------------------------------------------- */}
 
-                <div className="absolute right-6 md:right-12 lg:right-[7vw] top-1/2 -translate-y-1/2 z-30 w-[220px] xl:w-[280px] hidden md:block">
+                <div className="absolute right-6 md:right-10 lg:right-[6vw] xl:right-[8vw] top-1/2 -translate-y-1/2 z-30 w-[220px] xl:w-[280px] hidden md:block">
 
-
-                    {/* CURRENT ICON */}
+                    {/* CURRENT CATEGORY */}
 
                     <div className="flex items-center gap-4 mb-7">
 
-                        <div className="relative w-12 h-12 rounded-full bg-white border border-[#b27b45]/20 shadow-[0_10px_30px_rgba(71,41,29,0.12)] flex items-center justify-center">
+                        <div className="relative w-12 h-12 rounded-full bg-white/80 backdrop-blur-xl border border-[#efd8df] shadow-[0_12px_35px_rgba(92,38,53,0.1)] flex items-center justify-center">
 
                             <AnimatePresence
                                 mode="wait"
@@ -646,7 +665,7 @@ export default function CustomCake({ sectionRef }) {
                                     initial={{
                                         opacity: 0,
                                         scale: 0.7,
-                                        rotate: -15,
+                                        rotate: -12,
                                     }}
                                     animate={{
                                         opacity: 1,
@@ -656,17 +675,17 @@ export default function CustomCake({ sectionRef }) {
                                     exit={{
                                         opacity: 0,
                                         scale: 0.7,
-                                        rotate: 15,
+                                        rotate: 12,
                                     }}
                                     transition={{
-                                        duration: 0.35,
+                                        duration: 0.25,
                                     }}
                                 >
 
                                     <CurrentIcon
-                                        size={23}
+                                        size={22}
                                         strokeWidth={1.5}
-                                        className="text-[#a76f3f]"
+                                        className="text-[#b83a5a]"
                                     />
 
                                 </motion.div>
@@ -678,11 +697,11 @@ export default function CustomCake({ sectionRef }) {
 
                         <div>
 
-                            <p className="text-[9px] uppercase tracking-[0.3em] text-[#a76f3f]">
+                            <p className="text-[9px] uppercase tracking-[0.3em] text-[#d85c78] font-semibold">
                                 Collection
                             </p>
 
-                            <p className="text-xs text-[#806655] mt-1">
+                            <p className="text-xs text-[#624b51] mt-1">
                                 {currentCake.category}
                             </p>
 
@@ -701,7 +720,7 @@ export default function CustomCake({ sectionRef }) {
                                 key={currentCake.id}
                                 initial={{
                                     opacity: 0,
-                                    y: direction * 25,
+                                    y: direction * 20,
                                 }}
                                 animate={{
                                     opacity: 1,
@@ -709,24 +728,25 @@ export default function CustomCake({ sectionRef }) {
                                 }}
                                 exit={{
                                     opacity: 0,
-                                    y: direction * -20,
+                                    y: direction * -15,
                                 }}
                                 transition={{
-                                    duration: 0.45,
+                                    duration: 0.3,
+                                    ease: "easeOut",
                                 }}
                             >
 
-                                <p className="text-[10px] uppercase tracking-[0.3em] text-[#a76f3f] mb-3">
+                                <p className="text-[10px] uppercase tracking-[0.3em] text-[#d85c78] mb-3">
                                     {String(
                                         selectedCake + 1
                                     ).padStart(2, "0")}
                                 </p>
 
-                                <h3 className="font-serif text-4xl xl:text-5xl text-[#47291d] leading-[0.95]">
+                                <h3 className="font-serif text-4xl xl:text-5xl text-[#b83a5a] leading-[0.94] tracking-[-0.035em]">
                                     {currentCake.name}
                                 </h3>
 
-                                <p className="mt-6 text-sm leading-6 text-[#806655]">
+                                <p className="mt-6 text-sm leading-6 text-[#624b51] font-light">
                                     {currentCake.description}
                                 </p>
 
@@ -739,13 +759,13 @@ export default function CustomCake({ sectionRef }) {
 
                     {/* CTA */}
 
-                    <button className="group mt-8 flex items-center gap-3 px-5 py-3 rounded-full bg-[#47291d] text-white text-xs uppercase tracking-[0.2em] shadow-[0_12px_30px_rgba(71,41,29,0.18)] hover:bg-[#5a3425] transition-all duration-300">
+                    <button className="group mt-8 flex items-center gap-3 px-5 py-3 rounded-full bg-[#b83a5a] text-white text-xs uppercase tracking-[0.2em] shadow-[0_15px_35px_rgba(184,58,90,0.2)] hover:bg-[#9f304d] hover:-translate-y-0.5 transition-all duration-300">
 
                         <span>
                             Create your cake
                         </span>
 
-                        <span className="w-8 h-8 rounded-full bg-white/10 border border-white/20 flex items-center justify-center group-hover:bg-[#f1dfcc] group-hover:text-[#47291d] transition-all duration-300">
+                        <span className="w-8 h-8 rounded-full bg-white/10 border border-white/20 flex items-center justify-center group-hover:bg-white group-hover:text-[#b83a5a] transition-all duration-300">
 
                             <ArrowUpRight size={14} />
 
@@ -758,21 +778,22 @@ export default function CustomCake({ sectionRef }) {
             </div>
 
 
-            {/* BOTTOM PROGRESS */}
+            {/* --------------------------------------------------
+                BOTTOM PROGRESS
+            -------------------------------------------------- */}
 
             <div className="absolute bottom-7 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4">
 
-                <span className="text-[10px] tracking-[0.25em] text-[#806655]">
+                <span className="text-[10px] tracking-[0.25em] text-[#b83a5a] font-medium">
                     {String(
                         selectedCake + 1
                     ).padStart(2, "0")}
                 </span>
 
-
-                <div className="relative w-[100px] md:w-[180px] h-px bg-[#b27b45]/20 overflow-hidden">
+                <div className="relative w-[100px] md:w-[180px] h-[2px] bg-[#d85c78]/15 overflow-hidden rounded-full">
 
                     <motion.div
-                        className="absolute left-0 top-0 h-full bg-[#a76f3f]"
+                        className="absolute left-0 top-0 h-full bg-[#c74663] rounded-full"
                         style={{
                             width: progressWidth,
                         }}
@@ -780,15 +801,16 @@ export default function CustomCake({ sectionRef }) {
 
                 </div>
 
-
-                <span className="text-[10px] tracking-[0.25em] text-[#806655]">
+                <span className="text-[10px] tracking-[0.25em] text-[#b83a5a] font-medium">
                     12
                 </span>
 
             </div>
 
 
-            {/* MOBILE */}
+            {/* --------------------------------------------------
+                MOBILE
+            -------------------------------------------------- */}
 
             <div className="absolute bottom-14 left-5 right-5 z-50 md:hidden text-center">
 
@@ -809,7 +831,7 @@ export default function CustomCake({ sectionRef }) {
                             y: -15,
                         }}
                         transition={{
-                            duration: 0.4,
+                            duration: 0.3,
                         }}
                     >
 
@@ -818,17 +840,16 @@ export default function CustomCake({ sectionRef }) {
                             <CurrentIcon
                                 size={14}
                                 strokeWidth={1.5}
-                                className="text-[#a76f3f]"
+                                className="text-[#c74663]"
                             />
 
-                            <p className="text-[9px] uppercase tracking-[0.3em] text-[#a76f3f]">
+                            <p className="text-[9px] uppercase tracking-[0.3em] text-[#b83a5a]">
                                 {currentCake.category}
                             </p>
 
                         </div>
 
-
-                        <h3 className="font-serif text-3xl text-[#47291d]">
+                        <h3 className="font-serif text-3xl text-[#b83a5a] tracking-[-0.03em]">
                             {currentCake.name}
                         </h3>
 
