@@ -3,9 +3,9 @@ import { motion } from "framer-motion";
 import { ArrowUpRight, Heart, Sparkles, Gem } from "lucide-react";
 
 export default function WeddingCakeDetail({ frame }) {
-    const showStart = 740;
-    const showEnd = 780;
-    const fadeOutEnd = 800;
+    const showStart = 230;
+    const showEnd = 270;
+    const fadeOutEnd = 280;
 
     const fadeInProgress = Math.max(0, Math.min(1, (frame - showStart) / 25));
     const fadeOutProgress = Math.max(0, Math.min(1, (frame - showEnd) / (fadeOutEnd - showEnd)));

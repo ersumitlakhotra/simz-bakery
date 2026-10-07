@@ -21,7 +21,7 @@ const flavours = [
     "Strawberry",
     "Chocolate : + $5",
     "Chocolate Hazelnut : + $15",
-    "Black Forest : + $5)",
+    "Black Forest : + $5",
     "Strawberry shortcake : + $5",
     "Red Velvet : + $5",
     "Biscoff Cake : + $5",

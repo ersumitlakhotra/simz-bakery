@@ -1,15 +1,14 @@
 
-import React, { useState } from "react";
+import  { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, ShoppingBag } from "lucide-react";
+import { Menu, X } from "lucide-react";
 
 export default function Navbar() {
     const [isOpen, setIsOpen] = useState(false);
 
     const links = [
         { name: "Home", id: "Home" },
-        { name: "Our Cakes", id: "cakes" },
-        { name: "Gallery", id: "gallery" },
+        { name: "Our Cakes", id: "gallery" },
         { name: "Feedback", id: "feedback" },
         { name: "About Us", id: "about" },
     ];

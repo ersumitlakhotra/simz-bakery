@@ -3,9 +3,9 @@ import { motion } from "framer-motion";
 import { ArrowUpRight, CakeSlice, Sparkles } from "lucide-react";
 
 export default function BirthdayCakeDetail({ frame }) {
-    const showStart = 500;
-    const showEnd = 550;
-    const fadeOutEnd = 580;
+    const showStart = 20;
+    const showEnd = 60;
+    const fadeOutEnd = 80;
 
     const fadeInProgress = Math.max(
         0,

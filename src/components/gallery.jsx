@@ -87,7 +87,99 @@ const galleryItems = [
         title: "Your Story",
         size: "wide",
     },
+    {
+        id: 13,
+        image: "/images/gallery/gallery-13.jpg",
+        category: "Birthday",
+        title: "A Day to Remember",
+        size: "large",
+    },
+    {
+        id: 14,
+        image: "/images/gallery/gallery-14.jpg",
+        category: "Baby Shower",
+        title: "Sweet Little Joy",
+        size: "small",
+    },
+    {
+        id: 15,
+        image: "/images/gallery/gallery-15.jpg",
+        category: "Chocolate",
+        title: "Velvet Indulgence",
+        size: "tall",
+    },
+    {
+        id: 16,
+        image: "/images/gallery/gallery-16.jpg",
+        category: "Floral",
+        title: "Garden of Sweets",
+        size: "small",
+    },
+    {
+        id: 17,
+        image: "/images/gallery/gallery-17.jpg",
+        category: "Anniversary",
+        title: "Love in Every Layer",
+        size: "wide",
+    },
+    {
+        id: 18,
+        image: "/images/gallery/gallery-18.jpg",
+        category: "Custom",
+        title: "Designed with Love",
+        size: "small",
+    },
+    {
+        id: 19,
+        image: "/images/gallery/gallery-19.jpg",
+        category: "Wedding",
+        title: "The Sweetest Vows",
+        size: "large",
+    },
+    {
+        id: 20,
+        image: "/images/gallery/gallery-20.jpg",
+        category: "Luxury",
+        title: "Rose Gold Elegance",
+        size: "tall",
+    },
+    {
+        id: 21,
+        image: "/images/gallery/gallery-21.jpg",
+        category: "Celebration",
+        title: "Cheers to You",
+        size: "small",
+    },
+    {
+        id: 22,
+        image: "/images/gallery/gallery-22.jpg",
+        category: "Minimal",
+        title: "Pure & Simple",
+        size: "wide",
+    },
+    {
+        id: 23,
+        image: "/images/gallery/gallery-23.jpg",
+        category: "Special Moments",
+        title: "Made for the Moment",
+        size: "small",
+    },
+    {
+        id: 24,
+        image: "/images/gallery/gallery-24.jpg",
+        category: "Birthday",
+        title: "Make a Wish",
+        size: "large",
+    },
+    {
+        id: 25,
+        image: "/images/gallery/gallery-25.jpg",
+        category: "Luxury",
+        title: "The Grand Celebration",
+        size: "large",
+    },
 ];
+
 
 const containerVariants = {
     hidden: {},
@@ -120,15 +212,14 @@ function GalleryItem({ item, onClick }) {
         <motion.div
             variants={itemVariants}
             onClick={onClick}
-            className={`group relative overflow-hidden rounded-[24px] sm:rounded-[28px] cursor-pointer ${
-                item.size === "large"
+            className={`group relative overflow-hidden rounded-[24px] sm:rounded-[28px] cursor-pointer ${item.size === "large"
                     ? "md:col-span-2 md:row-span-2"
                     : item.size === "wide"
-                    ? "md:col-span-2"
-                    : item.size === "tall"
-                    ? "md:row-span-2"
-                    : ""
-            }`}
+                        ? "md:col-span-2"
+                        : item.size === "tall"
+                            ? "md:row-span-2"
+                            : ""
+                }`}
         >
             <motion.div
                 whileHover={{ scale: 1.025 }}
@@ -170,7 +261,7 @@ function GalleryItem({ item, onClick }) {
         </motion.div>
     );
 }
- 
+
 function GalleryLightbox({ selectedIndex, onClose, onPrevious, onNext }) {
     const item = galleryItems[selectedIndex];
 

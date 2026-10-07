@@ -3,9 +3,9 @@ import { motion } from "framer-motion";
 import { ArrowUpRight, Baby, Sparkles } from "lucide-react";
 
 export default function BabyShowerCakeDetail({ frame }) {
-    const showStart = 800;
-    const showEnd = 850;
-    const fadeOutEnd = 880;
+    const showStart = 280;
+    const showEnd = 330;
+    const fadeOutEnd = 340;
 
     const fadeInProgress = Math.max(0, Math.min(1, (frame - showStart) / 25));
     const fadeOutProgress = Math.max(0, Math.min(1, (frame - showEnd) / (fadeOutEnd - showEnd)));

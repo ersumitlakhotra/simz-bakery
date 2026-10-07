@@ -3,9 +3,9 @@ import { motion } from "framer-motion";
 import { ArrowUpRight, Heart, Sparkles } from "lucide-react";
 
 export default function MilestoneCakeDetail({ frame }) {
-    const showStart = 660;
-    const showEnd = 710;
-    const fadeOutEnd = 740;
+    const showStart = 160;
+    const showEnd = 220;
+    const fadeOutEnd = 230;
 
     const fadeInProgress = Math.max(0, Math.min(1, (frame - showStart) / 25));
     const fadeOutProgress = Math.max(0, Math.min(1, (frame - showEnd) / (fadeOutEnd - showEnd)));

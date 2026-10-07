@@ -3,9 +3,9 @@ import { motion } from "framer-motion";
 import { ArrowUpRight, WandSparkles } from "lucide-react";
 
 export default function CustomCakeDetail({ frame }) {
-    const showStart = 580;
-    const showEnd = 640;
-    const fadeOutEnd = 670;
+    const showStart = 80;
+    const showEnd = 140;
+    const fadeOutEnd = 160;
 
     const fadeInProgress = Math.max(0, Math.min(1, (frame - showStart) / 25));
     const fadeOutProgress = Math.max(0, Math.min(1, (frame - showEnd) / (fadeOutEnd - showEnd)));

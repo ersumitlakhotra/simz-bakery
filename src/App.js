@@ -1,9 +1,7 @@
 import React, { useRef } from "react";
 import "./App.css";
-import Home from "./components/Home";
+import Home from "./components/Home.jsx";
 import Navbar from "./components/navbar.jsx";
-import FeaturedCakes from "./components/FeaturedCakes.js";
-import CustomCake from "./components/CustomCake.js";
 import Gallery from "./components/gallery.jsx";
 import Testimonials from "./components/testimonials.jsx";
 import Booking from "./components/booking.jsx";
@@ -16,7 +14,7 @@ function App() {
       <Navbar />
 
       <main id="Home" className="relative w-full bg-black">
-        <section id="HomeScroll" className="relative h-[1500vh]">
+        <section id="HomeScroll" className="relative h-[500vh]">
           <div className="sticky top-0 h-screen overflow-hidden">
             <Home />
           </div>
