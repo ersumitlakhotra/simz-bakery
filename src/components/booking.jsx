@@ -109,7 +109,7 @@ export default function Booking() {
     };
 
     return (
-        <section id="order" className="relative w-full overflow-hidden bg-[#fffafd] py-24 sm:py-28 md:py-36 lg:py-40">
+        <section className="relative w-full overflow-hidden bg-[#fffafd] py-24 sm:py-28 md:py-36 lg:py-40">
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
                 <div className="absolute left-[-18%] top-[5%] w-[400px] h-[400px] sm:w-[600px] sm:h-[600px] rounded-full bg-[#f3b8c8]/14 blur-[120px] sm:blur-[160px]" />
 
@@ -152,7 +152,7 @@ export default function Booking() {
                             beautiful, fresh and made especially for you.
                         </p>
 
-                        <div className="flex flex-wrap gap-3 mt-7">
+                        <div id="booking" className="flex flex-wrap gap-3 mt-7">
                             <div className="flex items-center gap-2 rounded-full bg-white border border-[#4d3038]/8 px-4 py-2.5 shadow-[0_8px_25px_rgba(77,48,56,0.04)]">
                                 <Check size={13} strokeWidth={1.6} className="text-[#d98fa5]" />
 
@@ -188,7 +188,7 @@ export default function Booking() {
                     onSubmit={handleSubmit}
                     className="relative overflow-hidden rounded-[30px] sm:rounded-[36px] border border-white bg-white/80 backdrop-blur-xl shadow-[0_35px_110px_rgba(77,48,56,0.1)] p-5 sm:p-7 md:p-10 lg:p-14"
                 >
-                    <div className="absolute top-0 left-0 right-0 h-[5px] bg-gradient-to-r from-[#f3d4de] via-[#d98fa5] to-[#f3d4de]" />
+                    <div  className="absolute top-0 left-0 right-0 h-[5px] bg-gradient-to-r from-[#f3d4de] via-[#d98fa5] to-[#f3d4de]" />
 
                     <div className="absolute top-[-180px] right-[-130px] w-[400px] h-[400px] rounded-full bg-[#f3b8c8]/10 blur-[100px] pointer-events-none" />
 

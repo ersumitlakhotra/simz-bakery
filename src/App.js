@@ -42,7 +42,7 @@ function App() {
         <Testimonials />
       </section>
 
-      <section id="booking" className="min-h-screen bg-[#f8f2e9] flex items-center justify-center">
+      <section  className="min-h-screen bg-[#f8f2e9] flex items-center justify-center">
         <Booking />
       </section>
 

@@ -13,15 +13,15 @@ const galleryItems = [
     {
         id: 2,
         image: "/images/gallery/gallery-02.jpg",
-        category: "Wedding",
-        title: "Forever Begins",
-        size: "small",
+        category: "Chocolate",
+        title: "Chocolate Muse",
+        size: "wide",
     },
     {
         id: 3,
         image: "/images/gallery/gallery-03.jpg",
-        category: "Chocolate",
-        title: "Chocolate Muse",
+        category: "Wedding",
+        title: "Forever Begins",
         size: "small",
     },
     {
@@ -127,7 +127,7 @@ const galleryItems = [
         image: "/images/gallery/gallery-18.jpg",
         category: "Custom",
         title: "Designed with Love",
-        size: "small",
+        size: "large",
     },
     {
         id: 19,
@@ -213,12 +213,12 @@ function GalleryItem({ item, onClick }) {
             variants={itemVariants}
             onClick={onClick}
             className={`group relative overflow-hidden rounded-[24px] sm:rounded-[28px] cursor-pointer ${item.size === "large"
-                    ? "md:col-span-2 md:row-span-2"
-                    : item.size === "wide"
-                        ? "md:col-span-2"
-                        : item.size === "tall"
-                            ? "md:row-span-2"
-                            : ""
+                ? "md:col-span-2 md:row-span-2"
+                : item.size === "wide"
+                    ? "md:col-span-2"
+                    : item.size === "tall"
+                        ? "md:row-span-2"
+                        : ""
                 }`}
         >
             <motion.div
