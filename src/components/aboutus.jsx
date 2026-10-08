@@ -94,7 +94,7 @@ export default function About() {
                                 </div>
                             </div>
 
-                            {/* FLOATING CARD */}
+                            {/* FLOATING CARD 
                             <motion.div
                                 initial={{ opacity: 0, y: 25 }}
                                 whileInView={{ opacity: 1, y: 0 }}
@@ -125,7 +125,7 @@ export default function About() {
                                         </p>
                                     </div>
                                 </div>
-                            </motion.div>
+                            </motion.div>*/}
                         </div>
                     </motion.div>
 
@@ -146,7 +146,7 @@ export default function About() {
                             <span className="w-10 h-px bg-[#d98fa5]" />
 
                             <span className="text-[8px] sm:text-[9px] uppercase tracking-[0.35em] text-[#b27a8b] font-semibold">
-                                About Simz Bakery
+                                About Simran
                             </span>
 
                             <Sparkles
