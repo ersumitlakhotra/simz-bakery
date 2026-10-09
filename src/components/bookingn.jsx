@@ -67,7 +67,6 @@ export default function Booking() {
 
     const [form, setForm] = useState(initialForm);
     const [images, setImages] = useState([]);
-    const [submitted, setSubmitted] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitStatus, setSubmitStatus] = useState(null);
     const [submitMessage, setSubmitMessage] = useState("");
@@ -91,14 +90,12 @@ export default function Booking() {
     const showNotification = (status, message) => {
         setSubmitStatus(status);
         setSubmitMessage(message);
-        setSubmitted(status === "success");
 
         if (notificationTimerRef.current) {
             clearTimeout(notificationTimerRef.current);
         }
 
         notificationTimerRef.current = setTimeout(() => {
-            setSubmitted(false);
             setSubmitStatus(null);
             setSubmitMessage("");
         }, 4000);
@@ -112,7 +109,6 @@ export default function Booking() {
 
         setSubmitStatus(null);
         setSubmitMessage("");
-        setSubmitted(false);
     };
 
     const handleImages = (event) => {
@@ -208,7 +204,6 @@ const handleSubmit = async (event) => {
     }
 
     setIsSubmitting(true);
-    setSubmitted(false);
     setSubmitStatus(null);
     setSubmitMessage("");
 
