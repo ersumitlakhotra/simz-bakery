@@ -4,7 +4,7 @@ import Home from "./components/Home.jsx";
 import Navbar from "./components/navbar.jsx";
 import Gallery from "./components/gallery.jsx";
 import Testimonials from "./components/testimonials.jsx";
-import Booking from "./components/booking.jsx";
+import Booking from "./components/bookingn.jsx";
 import About from "./components/aboutus.jsx";
 
 function App() {
