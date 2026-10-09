@@ -1,21 +1,20 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useEffect, useRef, useState } from "react";
-import ExperienceLoader from "./loading.jsx";
 import Hero from "./Hero.jsx";
 import BirthdayCakeCard from "../cards/birthday.jsx";
 import CustomCakeDetail from "../cards/custom.jsx";
 import MilestoneCakeDetail from "../cards/milestone.jsx";
 import WeddingCakeDetail from "../cards/wedding.jsx";
 import BabyShowerCakeDetail from "../cards/babyshower.jsx";
+import { LoaderCircle } from "lucide-react";
 
 
 export default function Home() {
     const TOTAL_FRAMES = 380;
-    const INITIAL_FRAMES = 10;
+    const INITIAL_FRAMES = 20;
     const BATCH_SIZE = 50;
 
     const [frame, setFrame] = useState(1);
-    const [loadedFrames, setLoadedFrames] = useState(0);
     const [isReady, setIsReady] = useState(false);
 
     const targetFrame = useRef(1);
@@ -55,15 +54,6 @@ export default function Home() {
 
                 if (success && !cancelledRef.current) {
                     imageCache.current[frameNumber - 1] = image;
-                }
-
-                if (!cancelledRef.current) {
-                    setLoadedFrames((previous) =>
-                        Math.min(
-                            TOTAL_FRAMES,
-                            previous + 1
-                        )
-                    );
                 }
 
                 resolve();
@@ -289,15 +279,25 @@ export default function Home() {
     const currentImageSrc =
         currentImage?.src || getFramePath(1);
 
-    const loadingPercentage = Math.min(
-        100,
-        Math.round((loadedFrames / INITIAL_FRAMES) * 100)
-    );
-
     // Keep this only if other parts of your component use it.
     if (!isReady) {
         return (
-            <ExperienceLoader progress={loadingPercentage} />
+            <div
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent background
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        zIndex: 9999, // Ensure it's on top
+                    }}
+                >
+                  <LoaderCircle className="h-12 w-12 animate-spin " />
+                </div>
         );
     }
 
