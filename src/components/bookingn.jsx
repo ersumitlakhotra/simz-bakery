@@ -14,6 +14,7 @@ import {
     User,
     Sparkles,
 } from "lucide-react";
+import axios from 'axios';
 
 const API_URL = "https://kd5tocotuvosipnfazqokllk6e0ntodc.lambda-url.ca-central-1.on.aws/api/simz-order-email";
 //const API_URL = "http://localhost:3000/api/simz-order-email";
@@ -58,6 +59,23 @@ const initialForm = {
     phone: "",
     email: "",
     message: "",
+};
+ const apicall = async (body) => {
+     const options = {
+         method: "POST",
+         url: API_URL,
+         headers:
+         {
+             "Content-Type": "application/json",
+         },
+         data: body
+     };
+    try {
+        return await axios.request(options);
+    } catch (error) {
+        return error;
+    }
+    // api calls
 };
 
 export default function Booking() {
@@ -248,17 +266,19 @@ const handleSubmit = async (event) => {
             images: imageFiles,
         };
 
-        const response = await fetch(API_URL, {
+        {/*const response = await fetch(API_URL, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify(payload),
-        });
+        });    
+        */}
+        
+        const response = await apicall(JSON.stringify(payload));
+        const result = response.status === 201;
 
-        const result = await response.json().catch(() => ({}));
-
-        if (!response.ok || result.success !== true) {
+        if (!result) {
             throw new Error(
                 result.message ||
                 "Unable to send your enquiry. Please try again."
@@ -278,8 +298,7 @@ const handleSubmit = async (event) => {
 
         showNotification(
             "success",
-            result.message ||
-                "Your cake enquiry has been received. We'll be in touch soon."
+            "Your cake enquiry has been received. We'll be in touch soon."
         );
     } catch (error) {
         showNotification(
