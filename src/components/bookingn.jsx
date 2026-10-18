@@ -13,13 +13,15 @@ import {
     Upload,
     User,
     Sparkles,
+    LoaderCircle,
+    X
 } from "lucide-react";
-import axios from 'axios';
+import imageCompression from "browser-image-compression";
 
 const API_URL = "https://kd5tocotuvosipnfazqokllk6e0ntodc.lambda-url.ca-central-1.on.aws/api/simz-order-email";
 //const API_URL = "http://localhost:3000/api/simz-order-email";
 const MAX_IMAGES = 3;
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+const MAX_IMAGE_SIZE = 3 * 1024 * 1024;
 
 const flavours = [
     "Vanilla",
@@ -60,23 +62,6 @@ const initialForm = {
     email: "",
     message: "",
 };
- const apicall = async (body) => {
-     const options = {
-         method: "POST",
-         url: API_URL,
-         headers:
-         {
-             "Content-Type": "application/json",
-         },
-         data: body
-     };
-    try {
-        return await axios.request(options);
-    } catch (error) {
-        return error;
-    }
-    // api calls
-};
 
 export default function Booking() {
     const fileInputRef = useRef(null);
@@ -109,7 +94,7 @@ export default function Booking() {
         setSubmitStatus(status);
         setSubmitMessage(message);
 
-        if (notificationTimerRef.current) {
+      {/*  if (notificationTimerRef.current) {
             clearTimeout(notificationTimerRef.current);
         }
 
@@ -117,7 +102,12 @@ export default function Booking() {
             setSubmitStatus(null);
             setSubmitMessage("");
         }, 4000);
+        */}
     };
+    const handleClose = () => {
+    setSubmitMessage("");
+    setSubmitStatus(null);
+};
 
     const updateField = (field, value) => {
         setForm((current) => ({
@@ -200,115 +190,169 @@ export default function Booking() {
         setSubmitMessage("");
     };
 
-   
-const handleSubmit = async (event) => {
-    event.preventDefault();
+    const handleSubmit = async (event) => {
+        event.preventDefault();
 
-    if (isSubmitting) return;
+        if (isSubmitting) return;
 
-    if (
-        !form.name.trim() ||
-        !form.email.trim() ||
-        !form.phone.trim() ||
-        !form.flavour ||
-        !form.servingSize ||
-        !form.eventDate
-    ) {
-        showNotification(
-            "error",
-            "Please complete all required fields before submitting."
-        );
-        return;
-    }
-
-    setIsSubmitting(true);
-    setSubmitStatus(null);
-    setSubmitMessage("");
-
-    if (notificationTimerRef.current) {
-        clearTimeout(notificationTimerRef.current);
-    }
-
-    try {
-        const imageFiles = await Promise.all(
-            images.map(async ({ file }) => {
-                const base64 = await new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-
-                    reader.onload = () => {
-                        const result = reader.result;
-                        resolve(String(result).split(",")[1]);
-                    };
-
-                    reader.onerror = () => {
-                        reject(new Error("Failed to read an image."));
-                    };
-
-                    reader.readAsDataURL(file);
-                });
-
-                return {
-                    name: file.name,
-                    type: file.type,
-                    data: base64,
-                };
-            })
-        );
-
-        const payload = {
-            name: form.name.trim(),
-            email: form.email.trim(),
-            phone: form.phone.trim(),
-            flavour: form.flavour,
-            serving: form.servingSize,
-            eventDate: form.eventDate,
-            message: form.message.trim(),
-            images: imageFiles,
-        };
-
-        {/*const response = await fetch(API_URL, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify(payload),
-        });    
-        */}
-        
-        const response = await apicall(JSON.stringify(payload));
-        const result = response.status === 201;
-
-        if (!result) {
-            throw new Error(
-                result.message ||
-                "Unable to send your enquiry. Please try again."
+        if (
+            !form.name.trim() ||
+            !form.email.trim() ||
+            !form.phone.trim() ||
+            !form.flavour ||
+            !form.servingSize ||
+            !form.eventDate
+        ) {
+            showNotification(
+                "error",
+                "Please complete all required fields before submitting."
             );
+            return;
         }
 
-        images.forEach(({ preview }) => {
-            URL.revokeObjectURL(preview);
-        });
+        setIsSubmitting(true);
+        setSubmitStatus(null);
+        setSubmitMessage("");
 
-        setImages([]);
-        setForm({ ...initialForm });
-
-        if (fileInputRef.current) {
-            fileInputRef.current.value = "";
+        if (notificationTimerRef.current) {
+            clearTimeout(notificationTimerRef.current);
         }
 
-        showNotification(
-            "success",
-            "Your cake enquiry has been received. We'll be in touch soon."
-        );
-    } catch (error) {
-        showNotification(
-            "error",
-            error.message || "Something went wrong. Please try again."
-        );
-    } finally {
-        setIsSubmitting(false);
-    }
-};
+        try {
+            // Compress images and convert them to Base64.
+            const imageFiles = await Promise.all(
+                images.map(async ({ file }) => {
+                    if (!file || !file.type.startsWith("image/")) {
+                        throw new Error("Please select valid image files.");
+                    }
+
+                    const originalSize = file.size;
+
+                    const compressedFile = await imageCompression(file, {
+                        maxSizeMB: 0.5,
+                        maxWidthOrHeight: 1600,
+                        useWebWorker: true,
+                        initialQuality: 0.8,
+                        fileType: "image/jpeg",
+                    });
+
+                    // Convert the compressed image to Base64.
+                    const base64 = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+
+                        reader.onload = () => {
+                            const result = reader.result;
+
+                            if (typeof result !== "string") {
+                                reject(
+                                    new Error("Failed to read the compressed image.")
+                                );
+                                return;
+                            }
+
+                            resolve(result.split(",")[1]);
+                        };
+
+                        reader.onerror = () => {
+                            reject(
+                                new Error("Failed to read the compressed image.")
+                            );
+                        };
+
+                        reader.readAsDataURL(compressedFile);
+                    });
+
+
+                    return {
+                        name: file.name.replace(/\.[^.]+$/, "") + ".jpg",
+                        type: "image/jpeg",
+                        data: base64,
+                    };
+                })
+            );
+
+            // Prepare the API payload.
+            const payload = {
+                name: form.name.trim(),
+                email: form.email.trim(),
+                phone: form.phone.trim(),
+                flavour: form.flavour,
+                serving: form.servingSize,
+                eventDate: form.eventDate,
+                message: form.message.trim(),
+                images: imageFiles,
+            };
+
+            // Log payload size for troubleshooting.
+            const payloadSize = new Blob([
+                JSON.stringify(payload),
+            ]).size;
+
+
+            // Send the request to the API.
+            const response = await fetch(API_URL, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(payload),
+            });
+
+
+            // Safely handle JSON, HTML, or empty responses.
+            const responseText = await response.text();
+
+            let result = {};
+
+            try {
+                result = responseText
+                    ? JSON.parse(responseText)
+                    : {};
+            } catch {
+                result = {
+                    message: responseText,
+                };
+            }
+
+            if (!response.ok) {
+
+                throw new Error(
+                    typeof result.message === "string" &&
+                        result.message.length < 300
+                        ? result.message
+                        : `Unable to submit your enquiry. Server returned ${response.status}.`
+                );
+            }
+
+            // Release preview URLs after successful submission.
+            images.forEach(({ preview }) => {
+                if (preview) {
+                    URL.revokeObjectURL(preview);
+                }
+            });
+
+            setImages([]);
+            setForm({ ...initialForm });
+
+            if (fileInputRef.current) {
+                fileInputRef.current.value = "";
+            }
+
+            showNotification(
+                "success",
+               result.message
+            );
+        } catch (error) {
+
+            showNotification(
+                "error",
+                "Something went wrong. Please try again."
+            );
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     return (
         <section className="relative w-full overflow-hidden bg-[#fffafd] py-24 sm:py-28 md:py-36 lg:py-40">
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -521,11 +565,10 @@ const handleSubmit = async (event) => {
                                             fileInputRef.current?.click();
                                         }
                                     }}
-                                    className={`group min-h-[220px] sm:min-h-[250px] rounded-[24px] border border-dashed border-[#d98fa5]/35 bg-gradient-to-br from-[#fffafd] to-[#fcecf1] transition-all duration-500 flex flex-col items-center justify-center p-6 ${
-                                        images.length >= MAX_IMAGES || isSubmitting
+                                    className={`group min-h-[220px] sm:min-h-[250px] rounded-[24px] border border-dashed border-[#d98fa5]/35 bg-gradient-to-br from-[#fffafd] to-[#fcecf1] transition-all duration-500 flex flex-col items-center justify-center p-6 ${images.length >= MAX_IMAGES || isSubmitting
                                             ? "cursor-not-allowed opacity-60"
                                             : "cursor-pointer hover:from-[#fff7fa] hover:to-[#f8e0e7]"
-                                    }`}
+                                        }`}
                                 >
                                     <div className="w-14 h-14 rounded-full bg-white border border-[#d98fa5]/15 flex items-center justify-center mb-4 shadow-[0_10px_30px_rgba(77,48,56,0.06)] group-hover:scale-105 transition-all duration-500">
                                         <Upload size={20} strokeWidth={1.3} className="text-[#d98fa5]" />
@@ -653,6 +696,7 @@ const handleSubmit = async (event) => {
                         </button>
                     </div>
 
+
                     <AnimatePresence>
                         {submitMessage && (
                             <motion.div
@@ -660,18 +704,16 @@ const handleSubmit = async (event) => {
                                 initial={{ opacity: 0, y: 15 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -10 }}
-                                className={`absolute inset-x-5 sm:inset-x-8 bottom-5 sm:bottom-7 rounded-2xl px-5 py-4 flex items-center gap-3 shadow-2xl z-30 ${
-                                    submitStatus === "success"
+                                className={`absolute inset-x-5 sm:inset-x-8 bottom-5 sm:bottom-7 rounded-2xl px-5 py-4 flex items-center gap-3 shadow-2xl z-30 ${submitStatus === "success"
                                         ? "bg-[#4d3038] text-white"
                                         : "bg-[#fff0f2] text-[#8c3047] border border-[#edc4cf]"
-                                }`}
+                                    }`}
                             >
                                 <div
-                                    className={`w-8 h-8 shrink-0 rounded-full flex items-center justify-center ${
-                                        submitStatus === "success"
+                                    className={`w-8 h-8 shrink-0 rounded-full flex items-center justify-center ${submitStatus === "success"
                                             ? "bg-[#d98fa5] text-white"
                                             : "bg-[#edc4cf] text-[#8c3047]"
-                                    }`}
+                                        }`}
                                 >
                                     {submitStatus === "success" ? (
                                         <Check size={15} strokeWidth={1.6} />
@@ -680,27 +722,59 @@ const handleSubmit = async (event) => {
                                     )}
                                 </div>
 
-                                <div>
+                                <div className="flex-1 min-w-0">
                                     <p className="text-xs font-medium">
                                         {submitStatus === "success"
                                             ? "Thank you!"
                                             : "Unable to submit"}
                                     </p>
+
                                     <p
-                                        className={`mt-0.5 text-[10px] leading-5 ${
-                                            submitStatus === "success"
+                                        className={`mt-0.5 text-[10px] leading-5 break-words ${submitStatus === "success"
                                                 ? "text-white/70"
                                                 : "text-[#8c3047]"
-                                        }`}
+                                            }`}
                                     >
                                         {submitMessage}
                                     </p>
                                 </div>
+
+                                <button
+                                    type="button"
+                                    onClick={handleClose}
+                                    aria-label="Close notification"
+                                    className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-colors ${submitStatus === "success"
+                                            ? "text-white/70 hover:text-white hover:bg-white/10"
+                                            : "text-[#8c3047]/70 hover:text-[#8c3047] hover:bg-[#edc4cf]/50"
+                                        }`}
+                                >
+                                    <X size={16} strokeWidth={1.8} />
+                                </button>
                             </motion.div>
                         )}
                     </AnimatePresence>
+
                 </motion.form>
             </div>
+
+            {isSubmitting &&
+                <div
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent background
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        zIndex: 9999, // Ensure it's on top
+                    }}
+                >
+                    <LoaderCircle className="h-12 w-12 animate-spin " />
+                </div>
+            }
 
             <style>{`
                 .form-input {
