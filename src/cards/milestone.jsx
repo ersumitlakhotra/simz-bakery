@@ -17,8 +17,8 @@ export default function MilestoneCakeDetail({ frame }) {
                 ? fadeInProgress
                 : 1 - fadeOutProgress;
 
-    const enterX = 90 - fadeInProgress * 90;
-    const exitX = fadeOutProgress * 90;
+    const enterX = -70 + fadeInProgress * 70;
+const exitX = fadeOutProgress * -70;
     const x = frame <= showEnd ? enterX : exitX;
 
     const enterScale = 0.96 + fadeInProgress * 0.04;

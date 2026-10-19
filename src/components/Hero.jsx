@@ -30,6 +30,9 @@ export default function Hero({ frame }) {
             className="absolute inset-0 z-20 min-h-screen overflow-hidden bg-transparent text-white"
         >
 
+{/* Mobile Readability Overlay */}
+<div className="absolute inset-0 z-0 pointer-events-none bg-gradient-to-r from-black/45 via-black/45 to-transparent md:hidden" />
+
             {/* Soft Pink Ambient Glow */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
 

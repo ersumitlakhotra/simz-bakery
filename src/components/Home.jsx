@@ -2,10 +2,15 @@
 import { useEffect, useRef, useState } from "react";
 import Hero from "./Hero.jsx";
 import BirthdayCakeCard from "../cards/birthday.jsx";
+import BirthdayCakeCardMobile from "../cards/birthday_mobile.jsx";
 import CustomCakeDetail from "../cards/custom.jsx";
+import CustomCakeDetailMobile from "../cards/custom_mobile.jsx";
 import MilestoneCakeDetail from "../cards/milestone.jsx";
+import MilestoneCakeDetailMobile from "../cards/milestone_mobile.jsx";
 import WeddingCakeDetail from "../cards/wedding.jsx";
+import WeddingCakeDetailMobile from "../cards/wedding_mobile.jsx";
 import BabyShowerCakeDetail from "../cards/babyshower.jsx";
+import BabyShowerCakeDetailMobile from "../cards/babyshower_mobile.jsx";
 import { LoaderCircle } from "lucide-react";
 
 
@@ -303,22 +308,35 @@ export default function Home() {
 
     return (
         <>
-            <div className="relative inset-0 z-0 h-screen w-screen overflow-hidden bg-black">
+
+            <div className="fixed inset-0 z-0 h-screen w-screen overflow-hidden bg-black">
                 <img
                     src={currentImageSrc}
                     alt=""
                     draggable="false"
-                    className="absolute inset-0 h-full w-full select-none object-cover"
+                    className="absolute inset-0 h-full w-full select-none object-cover object-left md:object-center"
                 />
             </div>
 
             <Hero frame={frame} />
 
-            <BirthdayCakeCard frame={frame} />
-            <CustomCakeDetail frame={frame} />
-            <MilestoneCakeDetail frame={frame} />
-            <WeddingCakeDetail frame={frame} />
-            <BabyShowerCakeDetail frame={frame} />
+            {/* Laptop view */}
+            <div className="hidden md:block">
+                <BirthdayCakeCard frame={frame} />
+                <CustomCakeDetail frame={frame} />
+                <MilestoneCakeDetail frame={frame} />
+                <WeddingCakeDetail frame={frame} />
+                <BabyShowerCakeDetail frame={frame} />
+            </div>
+
+            {/* Mobile view */}
+            <div className="block md:hidden">
+                <BirthdayCakeCardMobile frame={frame} />
+                <CustomCakeDetailMobile frame={frame} />
+                <MilestoneCakeDetailMobile frame={frame} />
+                <WeddingCakeDetailMobile frame={frame} />
+                <BabyShowerCakeDetailMobile frame={frame} />
+            </div>
         </>
     );
 }

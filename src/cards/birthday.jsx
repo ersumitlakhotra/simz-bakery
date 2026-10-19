@@ -193,7 +193,7 @@ export default function BirthdayCakeDetail({ frame }) {
                                     className="group mt-8 bg-white text-[#3a2528] px-5 py-3 rounded-full flex items-center gap-3 text-xs font-semibold shadow-[0_12px_30px_rgba(0,0,0,0.14)] border border-[#eadde1] hover:bg-[#fdf3f6] hover:shadow-[0_16px_35px_rgba(0,0,0,0.18)] transition-all duration-300 pointer-events-auto"
                                 >
                                     <span>
-                                        Create Your Cake
+                                        Order Now
                                     </span>
 
                                     <span className="w-7 h-7 rounded-full bg-[#d98fa5] text-white flex items-center justify-center group-hover:rotate-45 transition-transform duration-300">
