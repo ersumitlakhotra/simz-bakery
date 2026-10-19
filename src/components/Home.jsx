@@ -16,7 +16,7 @@ import { LoaderCircle } from "lucide-react";
 
 export default function Home() {
     const TOTAL_FRAMES = 380;
-    const INITIAL_FRAMES = 100;
+    const INITIAL_FRAMES = 300;
     const BATCH_SIZE = 50;
 
     const [frame, setFrame] = useState(1);
