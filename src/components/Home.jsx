@@ -15,32 +15,25 @@ import { LoaderCircle } from "lucide-react";
 
 
 export default function Home() {
-
     const TOTAL_FRAMES = 380;
     const INITIAL_FRAMES = 20;
     const BATCH_SIZE = 50;
+
     const [frame, setFrame] = useState(1);
-    const [loadedFrames, setLoadedFrames] = useState(0);
     const [isReady, setIsReady] = useState(false);
+
     const targetFrame = useRef(1);
     const currentFrame = useRef(1);
     const lastFrame = useRef(1);
-
     const rafRef = useRef(null);
-
-    /*
-    ============================================================
-    IMAGE CACHE
-    ============================================================
-    */
 
     const imageCache = useRef([]);
     const loadingFrames = useRef(new Set());
     const cancelledRef = useRef(false);
     const nextBatchRef = useRef(INITIAL_FRAMES + 1);
-    const getFramePath = (frameNumber) => {
-        return `/frames/frame_${String(frameNumber).padStart(4, "0")}.webp`;
-    };
+
+    const getFramePath = (frameNumber) =>
+        `/frames/frame_${String(frameNumber).padStart(4, "0")}.webp`;
 
     const loadFrame = (frameNumber) => {
         if (
@@ -56,151 +49,85 @@ export default function Home() {
 
         return new Promise((resolve) => {
             const image = new Image();
+            let settled = false;
 
-            image.onload = () => {
+            const finish = (success) => {
+                if (settled) return;
+                settled = true;
+
                 loadingFrames.current.delete(frameNumber);
 
-                if (cancelledRef.current) {
-                    resolve();
-                    return;
+                if (success && !cancelledRef.current) {
+                    imageCache.current[frameNumber - 1] = image;
                 }
-
-                imageCache.current[frameNumber - 1] = image;
-
-                setLoadedFrames((previous) =>
-                    Math.min(TOTAL_FRAMES, previous + 1)
-                );
 
                 resolve();
             };
 
+            image.onload = () => finish(true);
             image.onerror = () => {
-                loadingFrames.current.delete(frameNumber);
-
                 console.error(
-                    `Failed to load frame: ${frameNumber}`,
+                    `Failed to load frame ${frameNumber}:`,
                     getFramePath(frameNumber)
                 );
-
-                if (!cancelledRef.current) {
-                    setLoadedFrames((previous) =>
-                        Math.min(TOTAL_FRAMES, previous + 1)
-                    );
-                }
-
-                resolve();
+                finish(false);
             };
 
             image.src = getFramePath(frameNumber);
+
+            // Handle images already available in browser cache.
+            if (image.complete) {
+                finish(image.naturalWidth > 0);
+            }
         });
     };
 
-    /*
-    ============================================================
-    LOAD BATCH
-    ============================================================
-    */
-
     const loadBatch = async (startFrame, endFrame) => {
-        if (cancelledRef.current) {
-            return;
-        }
+        if (cancelledRef.current) return;
 
         const frames = [];
 
         for (
-            let frameNumber = startFrame;
-            frameNumber <= endFrame &&
-            frameNumber <= TOTAL_FRAMES;
-            frameNumber++
+            let i = startFrame;
+            i <= Math.min(endFrame, TOTAL_FRAMES);
+            i++
         ) {
-            frames.push(frameNumber);
+            frames.push(i);
         }
 
         await Promise.all(
-            frames.map((frameNumber) =>
-                loadFrame(frameNumber)
-            )
+            frames.map((frameNumber) => loadFrame(frameNumber))
         );
     };
 
-    /*
-    ============================================================
-    INITIAL LOAD
-    ============================================================
-    */
-
+    // Render the website immediately; load frames in the background.
     useEffect(() => {
         cancelledRef.current = false;
 
-        const loadInitialFrames = async () => {
+        setIsReady(true);
+
+        const loadAllFrames = async () => {
             await loadBatch(1, INITIAL_FRAMES);
 
-            if (cancelledRef.current) {
-                return;
-            }
+            if (cancelledRef.current) return;
 
-            /*
-            First 100 frames are ready.
-            Show the website.
-            */
+            nextBatchRef.current = INITIAL_FRAMES + 1;
 
-            setIsReady(true);
-
-            /*
-            Start loading the remaining frames
-            in the background.
-            */
-
-            nextBatchRef.current =
-                INITIAL_FRAMES + 1;
-        };
-
-        loadInitialFrames();
-
-        return () => {
-            cancelledRef.current = true;
-        };
-    }, []);
-
-    /*
-    ============================================================
-    BACKGROUND FRAME LOADING
-    ============================================================
-    */
-
-    useEffect(() => {
-        if (!isReady) {
-            return;
-        }
-
-        let cancelled = false;
-
-        const loadRemainingFrames = async () => {
             while (
                 nextBatchRef.current <= TOTAL_FRAMES &&
-                !cancelled &&
                 !cancelledRef.current
             ) {
-                const start =
-                    nextBatchRef.current;
-
-                const end =
-                    Math.min(
-                        start + BATCH_SIZE - 1,
-                        TOTAL_FRAMES
-                    );
+                const start = nextBatchRef.current;
+                const end = Math.min(
+                    start + BATCH_SIZE - 1,
+                    TOTAL_FRAMES
+                );
 
                 await loadBatch(start, end);
 
-                nextBatchRef.current =
-                    end + 1;
+                if (cancelledRef.current) return;
 
-                /*
-                Give the browser a small opportunity
-                to render/handle scrolling before
-                starting the next batch.
-                */
+                nextBatchRef.current = end + 1;
 
                 await new Promise((resolve) =>
                     setTimeout(resolve, 30)
@@ -208,19 +135,14 @@ export default function Home() {
             }
         };
 
-        loadRemainingFrames();
+        loadAllFrames();
 
         return () => {
-            cancelled = true;
+            cancelledRef.current = true;
         };
-    }, [isReady]);
+    }, []);
 
-    /*
-    ============================================================
-    FORCE PAGE TO TOP
-    ============================================================
-    */
-
+    // Restore normal scrolling and start at the top.
     useEffect(() => {
         if ("scrollRestoration" in window.history) {
             window.history.scrollRestoration = "manual";
@@ -235,17 +157,11 @@ export default function Home() {
         };
     }, []);
 
-    /*
-    ============================================================
-    LOCK PAGE ONLY DURING INITIAL 100 FRAME LOAD
-    ============================================================
-    */
-
+    // Manage page scrolling while the experience initializes.
     useEffect(() => {
         if (isReady) {
             document.body.style.overflow = "";
             document.documentElement.style.overflow = "";
-
             return;
         }
 
@@ -258,338 +174,148 @@ export default function Home() {
         };
     }, [isReady]);
 
-    /*
-    ============================================================
-    SCROLL → FRAME
-    ============================================================
-    */
-
+    // Animate the frame sequence according to page scrolling.
     useEffect(() => {
-        if (!isReady) {
-            return;
-        }
+        if (!isReady) return;
 
-        const homeSection =
-            document.querySelector(
-                "main#Home > section"
-            );
+        const homeSection = document.querySelector(
+            "main#Home > section"
+        );
 
-        if (!homeSection) {
-            return;
-        }
+        if (!homeSection) return;
 
         const handleScroll = () => {
-            /*
-            ====================================================
-            HOME SECTION POSITION
-            ====================================================
-            */
-
-            const sectionTop =
-                homeSection.offsetTop;
-
-            const sectionHeight =
-                homeSection.offsetHeight;
-
-            /*
-            Because the sticky container is h-screen,
-            the usable scroll distance is:
-
-            section height - viewport height
-            */
+            const sectionTop = homeSection.offsetTop;
+            const sectionHeight = homeSection.offsetHeight;
 
             const scrollDistance =
-                sectionHeight -
-                window.innerHeight;
+                sectionHeight - window.innerHeight;
 
-            if (scrollDistance <= 0) {
-                return;
-            }
+            if (scrollDistance <= 0) return;
 
-            /*
-            ====================================================
-            RELATIVE HOME PROGRESS
-            ====================================================
-            */
-
-            const relativeScroll =
-                window.scrollY -
-                sectionTop;
+            const relativeScroll = window.scrollY - sectionTop;
 
             const progress = Math.max(
                 0,
-                Math.min(
-                    1,
-                    relativeScroll /
-                        scrollDistance
-                )
+                Math.min(1, relativeScroll / scrollDistance)
             );
 
-            /*
-            ====================================================
-            0 → 694
-            ====================================================
-            */
-
-            const calculatedFrame =
-                1 +
-                progress *
-                    (TOTAL_FRAMES - 1);
-
             targetFrame.current =
-                calculatedFrame;
+                1 + progress * (TOTAL_FRAMES - 1);
         };
-
-        /*
-        ========================================================
-        FRAME ANIMATION
-        ========================================================
-        */
 
         const animate = () => {
             const difference =
-                targetFrame.current -
-                currentFrame.current;
+                targetFrame.current - currentFrame.current;
 
-            /*
-            Smooth cinematic movement.
-            */
-
-            currentFrame.current +=
-                difference * 0.10;
+            currentFrame.current += difference * 0.10;
 
             if (Math.abs(difference) < 0.01) {
-                currentFrame.current =
-                    targetFrame.current;
+                currentFrame.current = targetFrame.current;
             }
 
             const requestedFrame = Math.max(
                 1,
                 Math.min(
                     TOTAL_FRAMES,
-                    Math.round(
-                        currentFrame.current
-                    )
+                    Math.round(currentFrame.current)
                 )
             );
 
-            /*
-            ====================================================
-            IF FRAME IS LOADED
-            ====================================================
-            */
+            let displayFrame = requestedFrame;
 
-            if (
-                imageCache.current[
-                    requestedFrame - 1
-                ]
-            ) {
-                if (
-                    requestedFrame !==
-                    lastFrame.current
-                ) {
-                    lastFrame.current =
-                        requestedFrame;
+            // Prefer the requested frame when it is loaded.
+            if (!imageCache.current[requestedFrame - 1]) {
+                displayFrame = lastFrame.current;
 
-                    setFrame(
-                        requestedFrame
-                    );
-                }
-            } else {
-                /*
-                =================================================
-                FRAME NOT LOADED YET
-                =================================================
-
-                Find the closest loaded frame so
-                the animation never goes blank.
-                */
-
-                let fallbackFrame =
-                    lastFrame.current;
-
-                /*
-                Look forward a little.
-                */
-
-                for (
-                    let i = 0;
-                    i <= 10;
-                    i++
-                ) {
-                    const candidate =
-                        requestedFrame + i;
+                // Find the nearest available frame.
+                for (let distance = 1; distance <= 10; distance++) {
+                    const forward = requestedFrame + distance;
+                    const backward = requestedFrame - distance;
 
                     if (
-                        candidate <=
-                            TOTAL_FRAMES &&
-                        imageCache.current[
-                            candidate - 1
-                        ]
+                        forward <= TOTAL_FRAMES &&
+                        imageCache.current[forward - 1]
                     ) {
-                        fallbackFrame =
-                            candidate;
+                        displayFrame = forward;
+                        break;
+                    }
 
+                    if (
+                        backward >= 1 &&
+                        imageCache.current[backward - 1]
+                    ) {
+                        displayFrame = backward;
                         break;
                     }
                 }
-
-                /*
-                Look backward if necessary.
-                */
-
-                if (
-                    !imageCache.current[
-                        fallbackFrame - 1
-                    ]
-                ) {
-                    for (
-                        let i = 1;
-                        i <= 10;
-                        i++
-                    ) {
-                        const candidate =
-                            requestedFrame -
-                            i;
-
-                        if (
-                            candidate >= 1 &&
-                            imageCache.current[
-                                candidate - 1
-                            ]
-                        ) {
-                            fallbackFrame =
-                                candidate;
-
-                            break;
-                        }
-                    }
-                }
-
-                if (
-                    fallbackFrame !==
-                    lastFrame.current
-                ) {
-                    lastFrame.current =
-                        fallbackFrame;
-
-                    setFrame(
-                        fallbackFrame
-                    );
-                }
             }
 
-            rafRef.current =
-                requestAnimationFrame(
-                    animate
-                );
+            if (
+                imageCache.current[displayFrame - 1] &&
+                displayFrame !== lastFrame.current
+            ) {
+                lastFrame.current = displayFrame;
+                setFrame(displayFrame);
+            }
+
+            rafRef.current = requestAnimationFrame(animate);
         };
 
-        window.addEventListener(
-            "scroll",
-            handleScroll,
-            {
-                passive: true,
-            }
-        );
+        window.addEventListener("scroll", handleScroll, {
+            passive: true,
+        });
 
         handleScroll();
 
-        rafRef.current =
-            requestAnimationFrame(
-                animate
-            );
+        rafRef.current = requestAnimationFrame(animate);
 
         return () => {
-            window.removeEventListener(
-                "scroll",
-                handleScroll
-            );
+            window.removeEventListener("scroll", handleScroll);
 
-            if (rafRef.current) {
-                cancelAnimationFrame(
-                    rafRef.current
-                );
+            if (rafRef.current !== null) {
+                cancelAnimationFrame(rafRef.current);
             }
         };
     }, [isReady]);
 
-    /*
-    ============================================================
-    CURRENT IMAGE
-    ============================================================
-    */
-
-    const currentImage =
-        imageCache.current[
-            frame - 1
-        ];
+    const currentImage = imageCache.current[frame - 1];
 
     const currentImageSrc =
-        currentImage?.src ||
-        getFramePath(1);
+        currentImage?.src || getFramePath(1);
 
-    /*
-    ============================================================
-    LOADING PERCENTAGE
-    ============================================================
-    */
-
-    const loadingPercentage =
-        Math.min(
-            100,
-            Math.round(
-                (
-                    loadedFrames /
-                    INITIAL_FRAMES
-                ) * 100
-            )
-        );
-
-    /*
-    ============================================================
-    MARKETING STEPS
-    ============================================================
-    */
-    /*
-    ============================================================
-    LOADER
-    ============================================================
-    */
-
+    // Keep this only if other parts of your component use it.
     if (!isReady) {
         return (
-
             <div
-                style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100%',
-                    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent background
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    zIndex: 9999, // Ensure it's on top
-                }}
-            >
-                <LoaderCircle className="h-12 w-12 animate-spin " />
-            </div>
-
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent background
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        zIndex: 9999, // Ensure it's on top
+                    }}
+                >
+                  <LoaderCircle className="h-12 w-12 animate-spin " />
+                </div>
         );
     }
 
     return (
         <>
-
-            <div className="fixed inset-0 z-0 h-screen w-screen overflow-hidden ">
-                <img
+            <div className="fixed inset-0 z-0 h-screen w-screen overflow-hidden bg-black">
+               <img
                     src={currentImageSrc}
                     alt=""
                     draggable="false"
                     className="absolute inset-0 h-full w-full select-none object-cover object-left md:object-center"
                 />
+               
             </div>
 
             <Hero frame={frame} />

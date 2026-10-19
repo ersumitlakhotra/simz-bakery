@@ -14,7 +14,7 @@ function App() {
       <Navbar />
 
       <main id="Home" className="relative w-full bg-black">
-        <section id="HomeScroll" className="relative h-[500vh] ">
+        <section id="HomeScroll" className="relative h-[1200vh] ">
           <div className="sticky top-0 h-screen overflow-hidden">
             <Home />
           </div>
@@ -50,10 +50,11 @@ function App() {
         <About />
       </section>
 
-      <section  className="pb-8 bg-white flex items-center justify-center">
-        <p>© {new Date().getFullYear()} Simz Bakery. All rights reserved.</p>
-        <p>Made with love, baked with care.</p>
-      </section>
+      <div className="relative z-10 flex w-full flex-col items-center justify-center gap-2 bg-white px-4 py-6 text-center text-black">
+        <p className="text-sm">
+          © {new Date().getFullYear()} Simz Bakery. All rights reserved.
+        </p>
+      </div>
 
     </div>
   );
