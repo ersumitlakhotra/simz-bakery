@@ -1,3 +1,4 @@
+
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useEffect, useRef, useState } from "react";
 import Hero from "./Hero.jsx";
@@ -13,11 +14,10 @@ import BabyShowerCakeDetail from "../cards/babyshower.jsx";
 import BabyShowerCakeDetailMobile from "../cards/babyshower_mobile.jsx";
 import { LoaderCircle } from "lucide-react";
 
-
 export default function Home() {
     const TOTAL_FRAMES = 380;
-    const INITIAL_FRAMES = 300;
-    const BATCH_SIZE = 50;
+    const INITIAL_FRAMES = 20;
+    const BATCH_SIZE = 10;
 
     const [frame, setFrame] = useState(1);
     const [isReady, setIsReady] = useState(false);
@@ -31,10 +31,12 @@ export default function Home() {
     const loadingFrames = useRef(new Set());
     const cancelledRef = useRef(false);
     const nextBatchRef = useRef(INITIAL_FRAMES + 1);
+    const lastPreloadFrame = useRef(0);
 
     const getFramePath = (frameNumber) =>
         `/frames/frame_${String(frameNumber).padStart(4, "0")}.webp`;
 
+    // Load a single frame without starting duplicate requests.
     const loadFrame = (frameNumber) => {
         if (
             frameNumber < 1 ||
@@ -49,12 +51,16 @@ export default function Home() {
 
         return new Promise((resolve) => {
             const image = new Image();
+
+            // Let Safari decode images asynchronously where supported.
+            image.decoding = "async";
+
             let settled = false;
 
             const finish = (success) => {
                 if (settled) return;
-                settled = true;
 
+                settled = true;
                 loadingFrames.current.delete(frameNumber);
 
                 if (success && !cancelledRef.current) {
@@ -65,11 +71,13 @@ export default function Home() {
             };
 
             image.onload = () => finish(true);
+
             image.onerror = () => {
                 console.error(
                     `Failed to load frame ${frameNumber}:`,
                     getFramePath(frameNumber)
                 );
+
                 finish(false);
             };
 
@@ -82,6 +90,7 @@ export default function Home() {
         });
     };
 
+    // Load a small batch instead of requesting hundreds of images at once.
     const loadBatch = async (startFrame, endFrame) => {
         if (cancelledRef.current) return;
 
@@ -100,10 +109,9 @@ export default function Home() {
         );
     };
 
-    // Render the website immediately; load frames in the background.
+    // Show the page immediately and load frames in small batches.
     useEffect(() => {
         cancelledRef.current = false;
-
         setIsReady(true);
 
         const loadAllFrames = async () => {
@@ -118,6 +126,7 @@ export default function Home() {
                 !cancelledRef.current
             ) {
                 const start = nextBatchRef.current;
+
                 const end = Math.min(
                     start + BATCH_SIZE - 1,
                     TOTAL_FRAMES
@@ -129,6 +138,7 @@ export default function Home() {
 
                 nextBatchRef.current = end + 1;
 
+                // Give the browser a little breathing room between batches.
                 await new Promise((resolve) =>
                     setTimeout(resolve, 30)
                 );
@@ -157,7 +167,7 @@ export default function Home() {
         };
     }, []);
 
-    // Manage page scrolling while the experience initializes.
+    // Keep page scrolling enabled.
     useEffect(() => {
         if (isReady) {
             document.body.style.overflow = "";
@@ -184,6 +194,7 @@ export default function Home() {
 
         if (!homeSection) return;
 
+        // Prioritize frames near the user's current scroll position.
         const handleScroll = () => {
             const sectionTop = homeSection.offsetTop;
             const sectionHeight = homeSection.offsetHeight;
@@ -202,6 +213,33 @@ export default function Home() {
 
             targetFrame.current =
                 1 + progress * (TOTAL_FRAMES - 1);
+
+            const requestedFrame = Math.round(
+                targetFrame.current
+            );
+
+            // Avoid triggering new preload requests for every scroll event.
+            if (
+                Math.abs(
+                    requestedFrame - lastPreloadFrame.current
+                ) >= 3
+            ) {
+                lastPreloadFrame.current = requestedFrame;
+
+                const start = Math.max(
+                    1,
+                    requestedFrame - 4
+                );
+
+                const end = Math.min(
+                    TOTAL_FRAMES,
+                    requestedFrame + 10
+                );
+
+                for (let i = start; i <= end; i++) {
+                    loadFrame(i);
+                }
+            }
         };
 
         const animate = () => {
@@ -224,11 +262,11 @@ export default function Home() {
 
             let displayFrame = requestedFrame;
 
-            // Prefer the requested frame when it is loaded.
+            // Use the requested frame when it is already loaded.
             if (!imageCache.current[requestedFrame - 1]) {
                 displayFrame = lastFrame.current;
 
-                // Find the nearest available frame.
+                // Search nearby loaded frames to prevent blank images.
                 for (let distance = 1; distance <= 10; distance++) {
                     const forward = requestedFrame + distance;
                     const backward = requestedFrame - distance;
@@ -284,31 +322,29 @@ export default function Home() {
     const currentImageSrc =
         currentImage?.src || getFramePath(1);
 
-    // Keep this only if other parts of your component use it.
     if (!isReady) {
         return (
             <div
-                    style={{
-                        position: 'fixed',
-                        top: 0,
-                        left: 0,
-                        width: '100%',
-                        height: '100%',
-                        backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent background
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        zIndex: 9999, // Ensure it's on top
-                    }}
-                >
-                  <LoaderCircle className="h-12 w-12 animate-spin " />
-                </div>
+                style={{
+                    position: "fixed",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    height: "100%",
+                    backgroundColor: "rgba(0,0,0,0.5)",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    zIndex: 9999,
+                }}
+            >
+                <LoaderCircle className="h-12 w-12 animate-spin" />
+            </div>
         );
     }
 
     return (
         <>
-
             <div className="fixed inset-0 z-0 h-screen w-screen overflow-hidden bg-black">
                 <img
                     src={currentImageSrc}
@@ -320,7 +356,6 @@ export default function Home() {
 
             <Hero frame={frame} />
 
-            {/* Laptop view */}
             <div className="hidden md:block">
                 <BirthdayCakeCard frame={frame} />
                 <CustomCakeDetail frame={frame} />
@@ -329,7 +364,6 @@ export default function Home() {
                 <BabyShowerCakeDetail frame={frame} />
             </div>
 
-            {/* Mobile view */}
             <div className="block md:hidden">
                 <BirthdayCakeCardMobile frame={frame} />
                 <CustomCakeDetailMobile frame={frame} />
@@ -340,4 +374,3 @@ export default function Home() {
         </>
     );
 }
-
