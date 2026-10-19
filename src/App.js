@@ -14,7 +14,7 @@ function App() {
       <Navbar />
 
       <main id="Home" className="relative w-full bg-black">
-        <section id="HomeScroll" className="relative h-[500vh]">
+        <section id="HomeScroll" className="relative h-[600vh]">
           <div className="sticky top-0 h-screen overflow-hidden">
             <Home />
           </div>
