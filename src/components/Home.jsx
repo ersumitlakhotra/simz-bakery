@@ -34,7 +34,7 @@ export default function Home() {
     const getFramePath = (frameNumber) =>
         `/frames/frame_${String(frameNumber).padStart(4, "0")}.webp`;
 
-    // Load an individual frame and cache it after successful loading.
+    // Load an individual frame and cache it after successful loading. 
     const loadFrame = (frameNumber) => {
         if (
             frameNumber < 1 ||
