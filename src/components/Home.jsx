@@ -323,6 +323,7 @@ export default function Home() {
         // Set the correct frame before starting the animation loop.
         handleScroll();
 
+
         rafRef.current = requestAnimationFrame(animate);
 
         return () => {
