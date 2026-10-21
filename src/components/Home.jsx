@@ -129,7 +129,7 @@ export default function Home() {
         loadAllFrames();
 
         return () => {
-           // cancelledRef.current = true;
+            cancelledRef.current = true;
         };
     }, []);
 
@@ -169,9 +169,7 @@ export default function Home() {
     useEffect(() => {
         if (!isReady) return;
 
-        const homeSection = document.querySelector(
-            "main#Home > section"
-        );
+      const homeSection = document.querySelector("#home");
 
         if (!homeSection) return;
 
