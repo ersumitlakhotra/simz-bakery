@@ -27,6 +27,7 @@ export default function Home() {
     const rafRef = useRef(null);
 
     const imageCache = useRef([]);
+
     const loadingFrames = useRef(new Map());
     const cancelledRef = useRef(false);
     const nextBatchRef = useRef(2);
