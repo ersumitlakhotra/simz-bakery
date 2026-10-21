@@ -1,4 +1,3 @@
-import React, { useRef } from "react";
 import "./App.css";
 import Home from "./components/Home.jsx";
 import Navbar from "./components/navbar.jsx";
@@ -8,7 +7,6 @@ import Booking from "./components/bookingn.jsx";
 import About from "./components/aboutus.jsx";
 
 function App() {
-  const sectionRef = useRef(null);
   return (
     <div className=" bg-[#f8f2e9] text-[#4a2a1d]">
       <Navbar />
