@@ -169,6 +169,7 @@ export default function Home() {
     useEffect(() => {
         if (!isReady) return;
 
+        
       const homeSection = document.querySelector("#home");
 
         if (!homeSection) return;
