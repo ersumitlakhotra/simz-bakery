@@ -7,6 +7,10 @@ import Testimonials from "./components/testimonials.jsx";
 import Booking from "./components/bookingn.jsx";
 import About from "./components/aboutus.jsx";
 
+if (typeof window !== "undefined" && "scrollRestoration" in window.history) {
+    window.history.scrollRestoration = "manual";
+}
+
 function App() {
 
   return (
