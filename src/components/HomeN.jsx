@@ -26,29 +26,29 @@ export const HomeN = () => {
         `/frames/frame_${String(frameNumber).padStart(4, "0")}.webp`;
 
     useEffect(() => {
-     let cancelled = false;
-     let animationId = null;
+        let cancelled = false;
+        let animationId = null;
 
-     const imageCache = [];
-     const loadingFrames = new Set();
+        const imageCache = [];
+        const loadingFrames = new Set();
 
-     let targetFrame = 1;
-     let currentFrame = 1;
-     let lastFrame = 1;
-     let nextBatch = INITIAL_FRAMES + 1;
+        let targetFrame = 1;
+        let currentFrame = 1;
+        let lastFrame = 1;
+        let nextBatch = INITIAL_FRAMES + 1;
 
-     if ("scrollRestoration" in window.history) {
-         window.history.scrollRestoration = "manual";
-     }
+        if ("scrollRestoration" in window.history) {
+            window.history.scrollRestoration = "manual";
+        }
 
-     // Force scroll to top reliably on Safari refresh
-     window.scrollTo(0, 0);
-     const timer = setTimeout(() => {
-         window.scrollTo(0, 0);
-         handleScroll();
-     }, 50);
+        // Force scroll to top reliably on Safari refresh
+       {/*window.scrollTo(0, 0);
+        const timer = setTimeout(() => {
+            window.scrollTo(0, 0);
+            handleScroll();
+        }, 50);*/} 
 
-const loadFrame = (frameNumber) => {
+        const loadFrame = (frameNumber) => {
             if (
                 cancelled ||
                 frameNumber < 1 ||
@@ -116,33 +116,33 @@ const loadFrame = (frameNumber) => {
         };
 
 
-     const homeSection = document.querySelector("main#Home > section");
+        const homeSection = document.querySelector("main#Home > section");
 
-     const handleScroll = () => {
-         if (!homeSection) return;
+        const handleScroll = () => {
+            if (!homeSection) return;
 
-         const sectionTop =
-             homeSection.getBoundingClientRect().top + window.scrollY;
-         const scrollDistance =
-             homeSection.offsetHeight - window.innerHeight;
+            const sectionTop =
+                homeSection.getBoundingClientRect().top + window.scrollY;
+            const scrollDistance =
+                homeSection.offsetHeight - window.innerHeight;
 
-         if (scrollDistance <= 0) {
-             targetFrame = 1;
-             return;
-         }
+            if (scrollDistance <= 0) {
+                targetFrame = 1;
+                return;
+            }
 
-         const progress = Math.max(
-             0,
-             Math.min(
-                 1,
-                 (window.scrollY - sectionTop) / scrollDistance
-             )
-         );
+            const progress = Math.max(
+                0,
+                Math.min(
+                    1,
+                    (window.scrollY - sectionTop) / scrollDistance
+                )
+            );
 
-         targetFrame = 1 + progress * (TOTAL_FRAMES - 1);
-     };
+            targetFrame = 1 + progress * (TOTAL_FRAMES - 1);
+        };
 
- const animate = () => {
+        const animate = () => {
             if (cancelled) return;
 
             const difference = targetFrame - currentFrame;
@@ -238,24 +238,24 @@ const loadFrame = (frameNumber) => {
         };
 
 
-     window.addEventListener("scroll", handleScroll, { passive: true });
-     window.addEventListener("resize", handleScroll);
+        window.addEventListener("scroll", handleScroll, { passive: true });
+        window.addEventListener("resize", handleScroll);
 
-     animationId = requestAnimationFrame(animate);
-     loadAllFrames();
+        animationId = requestAnimationFrame(animate);
+        loadAllFrames();
 
-     return () => {
-         cancelled = true;
-         clearTimeout(timer);
-         if (animationId !== null) cancelAnimationFrame(animationId);
-         window.removeEventListener("scroll", handleScroll);
-         window.removeEventListener("resize", handleScroll);
+        return () => {
+            cancelled = true;
+           // clearTimeout(timer);
+            if (animationId !== null) cancelAnimationFrame(animationId);
+            window.removeEventListener("scroll", handleScroll);
+            window.removeEventListener("resize", handleScroll);
 
-         if ("scrollRestoration" in window.history) {
-             window.history.scrollRestoration = "auto";
-         }
-     };
- }, []);
+            if ("scrollRestoration" in window.history) {
+                window.history.scrollRestoration = "auto";
+            }
+        };
+    }, []);
 
     const currentImageSrc = getFramePath(frame); // Keep this only if other parts of your component use it.
     {/*if (!isReady) {
