@@ -375,7 +375,7 @@ export default function Home() {
                     src={currentImageSrc}
                     alt=""
                     draggable="false"
-                    className="absolute inset-0 h-full w-full select-none object-cover object-left md:object-center"
+                    className="absolute inset-0 h-full w-full select-none object-cover object-left md:object-center "
                 />
             </div>
 

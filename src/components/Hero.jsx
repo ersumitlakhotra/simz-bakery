@@ -12,6 +12,7 @@ export default function Hero({ frame }) {
         Math.min(1, (frame - fadeStart) / (fadeEnd - fadeStart))
     );
 
+    
     const opacity = 1 - progress;
     const scale = 1 - progress * 0.035;
     const blur = progress * 10;
