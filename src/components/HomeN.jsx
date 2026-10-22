@@ -245,9 +245,7 @@ export const HomeN = () => {
             }
         };
 
-        window.addEventListener("scroll", handleScroll, {
-            passive: true,
-        });
+        window.addEventListener("scroll", handleScroll, {passive: true,});
 
         window.addEventListener("resize", handleScroll);
 
@@ -321,14 +319,14 @@ export const HomeN = () => {
                 <BabyShowerCakeDetail frame={frame} />
             </div>
 
-            {/* Mobile view */}
+            {/* Mobile view 
             <div className="block md:hidden">
                 <BirthdayCakeCardMobile frame={frame} />
                 <CustomCakeDetailMobile frame={frame} />
                 <MilestoneCakeDetailMobile frame={frame} />
                 <WeddingCakeDetailMobile frame={frame} />
                 <BabyShowerCakeDetailMobile frame={frame} />
-            </div>
+            </div>*/}
         </>
     );
 }
