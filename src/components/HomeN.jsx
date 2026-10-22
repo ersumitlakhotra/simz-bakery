@@ -1,5 +1,7 @@
+
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useEffect, useRef, useState } from "react";
+
 import Hero from "./Hero.jsx";
 import BirthdayCakeCard from "../cards/birthday.jsx";
 import BirthdayCakeCardMobile from "../cards/birthday_mobile.jsx";
@@ -11,116 +13,175 @@ import WeddingCakeDetail from "../cards/wedding.jsx";
 import WeddingCakeDetailMobile from "../cards/wedding_mobile.jsx";
 import BabyShowerCakeDetail from "../cards/babyshower.jsx";
 import BabyShowerCakeDetailMobile from "../cards/babyshower_mobile.jsx";
-import { LoaderCircle } from "lucide-react";
-
 
 export const HomeN = () => {
+    const TOTAL_FRAMES = 350;
 
-    const TOTAL_FRAMES = 314;
     const [frame, setFrame] = useState(1);
+
+    // Store preloaded images between renders.
+    const images = useRef([]);
+    const loadedFrames = useRef(new Set());
+    const targetFrame = useRef(1);
+    const currentFrame = useRef(1);
+    const animationId = useRef(null);
 
     const getFramePath = (frameNumber) =>
         `/frames/frame_${String(frameNumber).padStart(4, "0")}.webp`;
 
-    
-useEffect(() => {
-    const homeSection = document.querySelector("main#Home > section");
+    // Preload all 314 frames.
+    useEffect(() => {
+        let cancelled = false;
 
-    if (!homeSection) return;
+        images.current = [];
+        loadedFrames.current = new Set();
 
-    let targetFrame = 1;
-    let currentFrame = 1;
-    let animationId = null;
+        for (let i = 0; i < TOTAL_FRAMES; i++) {
+            const img = new Image();
 
-    const handleScroll = () => {
-        const sectionHeight = homeSection.offsetHeight;
-        const maxScroll = sectionHeight - window.innerHeight;
+            img.onload = async () => {
+                try {
+                    await img.decode();
 
-        if (maxScroll <= 0) return;
+                    if (cancelled) return;
 
-        const scrollProgress = Math.min(
-            1,
-            Math.max(0, window.scrollY / maxScroll)
-        );
+                    loadedFrames.current.add(i);
 
-        targetFrame = Math.round(
-            scrollProgress * (TOTAL_FRAMES - 1)
-        ) + 1;
+                } catch (error) {
+                    console.error(`Failed to decode frame ${i}`, error);
+                }
+            };
 
-        if (animationId === null) {
-            animationId = requestAnimationFrame(animateFrame);
-        }
-    };
+            img.onerror = () => {
+                console.error(`Failed to load frame ${i}: ${getFramePath(i)}`);
+            };
 
-    const animateFrame = () => {
-        const difference = targetFrame - currentFrame;
-
-        // Smoothly approach the target frame
-        currentFrame += difference * 0.15;
-
-        if (Math.abs(difference) < 0.1) {
-            currentFrame = targetFrame;
+            images.current[i] = img;
+            img.src = getFramePath(i);
         }
 
-        const nextFrame = Math.max(
-            1,
-            Math.min(TOTAL_FRAMES, Math.round(currentFrame))
+        return () => {
+            cancelled = true;
+
+            images.current.forEach((img) => {
+                if (img) {
+                    img.onload = null;
+                    img.onerror = null;
+                }
+            });
+        };
+    }, []);
+
+    // Map scroll position to frames and animate smoothly.
+    useEffect(() => {
+        const homeSection = document.querySelector(
+            "main#Home > section"
         );
 
-        setFrame((previousFrame) =>
-            previousFrame !== nextFrame ? nextFrame : previousFrame
-        );
-
-        if (currentFrame !== targetFrame) {
-            animationId = requestAnimationFrame(animateFrame);
-        } else {
-            animationId = null;
+        if (!homeSection) {
+            console.error('Could not find "main#Home > section".');
+            return;
         }
-    };
 
-    window.addEventListener("scroll", handleScroll, {
-        passive: true,
-    });
+        let rafId = null;
 
-    handleScroll();
-}, []);
+        const animateFrame = () => {
+            const difference =
+                targetFrame.current - currentFrame.current;
 
-    const currentImage = getFramePath(frame - 1);
+            // Higher values follow scrolling more closely.
+            currentFrame.current += difference * 0.10;
 
+            if (Math.abs(difference) < 0.05) {
+                currentFrame.current = targetFrame.current;
+            }
 
-    //  const currentImageSrc = getFramePath(frame); // Keep this only if other parts of your component use it.
-    {/*if (!isReady) {
-        return (
-            <div
-                style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100%',
-                    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent background
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    zIndex: 9999, // Ensure it's on top
-                }}
-            >
-                <LoaderCircle className="h-12 w-12 animate-spin " />
-            </div>
-        );
-    }*/}
+            const nextFrame = Math.max(
+                1,
+                Math.min(
+                    TOTAL_FRAMES,
+                    Math.round(currentFrame.current)
+                )
+            );
+
+            // Display only frames that have loaded successfully.
+            if (loadedFrames.current.has(nextFrame)) {
+                setFrame((previousFrame) =>
+                    previousFrame === nextFrame
+                        ? previousFrame
+                        : nextFrame
+                );
+            }
+
+            if (currentFrame.current !== targetFrame.current) {
+                rafId = requestAnimationFrame(animateFrame);
+            } else {
+                rafId = null;
+            }
+
+            animationId.current = rafId;
+        };
+
+        const handleScroll = () => {
+            const rect = homeSection.getBoundingClientRect();
+            const sectionTop = rect.top + window.scrollY;
+            const sectionHeight = homeSection.offsetHeight;
+
+            const maxScroll = sectionHeight - window.innerHeight;
+
+            if (maxScroll <= 0) {
+                targetFrame.current = 1;
+            } else {
+                const sectionScroll = window.scrollY - sectionTop;
+
+                const progress = Math.max(
+                    0,
+                    Math.min(1, sectionScroll / maxScroll)
+                );
+
+                targetFrame.current =
+                    Math.round(progress * (TOTAL_FRAMES - 1)) + 1;
+            }
+
+            if (rafId === null) {
+                rafId = requestAnimationFrame(animateFrame);
+                animationId.current = rafId;
+            }
+        };
+
+        window.addEventListener("scroll", handleScroll, {
+            passive: true,
+        });
+
+        window.addEventListener("resize", handleScroll);
+
+        handleScroll();
+
+        return () => {
+            window.removeEventListener("scroll", handleScroll);
+            window.removeEventListener("resize", handleScroll);
+
+            if (rafId !== null) {
+                cancelAnimationFrame(rafId);
+            }
+
+            animationId.current = null;
+        };
+    }, []);
+
+    const currentImage = getFramePath(frame);
 
     return (
         <>
-
+            {/* Fixed frame animation background */}
             <div className="fixed inset-0 z-0 h-screen w-screen overflow-hidden bg-black">
                 <img
                     src={currentImage}
                     alt=""
                     draggable="false"
+                    decoding="async"
                     className="absolute inset-0 h-full w-full select-none object-cover object-left md:object-center"
                 />
-
             </div>
 
             <Hero frame={frame} />
@@ -144,5 +205,4 @@ useEffect(() => {
             </div>
         </>
     );
-}
-
+};
