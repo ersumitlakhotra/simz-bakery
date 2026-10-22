@@ -16,195 +16,52 @@ import { LoaderCircle } from "lucide-react";
 
 export const HomeN = () => {
 
-    const TOTAL_FRAMES = 380;
-    const INITIAL_FRAMES = 20;
-    const BATCH_SIZE = 40;
+    const TOTAL_FRAMES = 314;
 
     const [frame, setFrame] = useState(1);
 
     const getFramePath = (frameNumber) =>
         `/frames/frame_${String(frameNumber).padStart(4, "0")}.webp`;
 
- useEffect(() => {
-        let cancelled = false;
-        let animationId = null;
-
-        const imageCache = [];
-        const loadingFrames = new Set();
-
-        let targetFrame = 1;
-        let currentFrame = 1;
-        let lastFrame = 1;
-        let nextBatch = INITIAL_FRAMES + 1;
-
-        // Force scroll to top immediately on mount/refresh
-        window.scrollTo(0, 0);
-
-        const loadFrame = (frameNumber) => {
-            if (
-                cancelled ||
-                frameNumber < 1 ||
-                frameNumber > TOTAL_FRAMES ||
-                imageCache[frameNumber - 1] ||
-                loadingFrames.has(frameNumber)
-            ) {
-                return Promise.resolve();
-            }
-
-            loadingFrames.add(frameNumber);
-
-            return new Promise((resolve) => {
-                const image = new Image();
-                let settled = false;
-
-                const finish = (success) => {
-                    if (settled) return;
-                    settled = true;
-                    loadingFrames.delete(frameNumber);
-                    if (success && !cancelled) {
-                        imageCache[frameNumber - 1] = image;
-                    }
-                    resolve();
-                };
-
-                image.onload = () => finish(true);
-                image.onerror = () => finish(false);
-                image.src = getFramePath(frameNumber);
-
-                if (image.complete) {
-                    finish(image.naturalWidth > 0);
-                }
-            });
-        };
-
-        const loadBatch = async (startFrame, endFrame) => {
-            if (cancelled) return;
-            const framesToLoad = [];
-            for (let i = startFrame; i <= Math.min(endFrame, TOTAL_FRAMES); i++) {
-                framesToLoad.push(i);
-            }
-            await Promise.all(framesToLoad.map((number) => loadFrame(number)));
-        };
-
+    useEffect(() => {
         const handleScroll = () => {
-            const homeSection = document.querySelector("main#Home > section");
-            if (!homeSection) return;
-
-            const sectionTop =
-                homeSection.getBoundingClientRect().top + window.scrollY;
-            const scrollDistance =
-                homeSection.offsetHeight - window.innerHeight;
-
-            if (scrollDistance <= 0) {
-                targetFrame = 1;
-                return;
-            }
-
-            const progress = Math.max(
-                0,
-                Math.min(
-                    1,
-                    (window.scrollY - sectionTop) / scrollDistance
-                )
+            const homeSection = document.querySelector(
+                "main#Home > section"
             );
+            const sectionHeight = homeSection.offsetHeight;
 
-            targetFrame = 1 + progress * (TOTAL_FRAMES - 1);
-        };
+            const maxScroll =
+                sectionHeight - window.innerHeight;
 
-        const animate = () => {
-            if (cancelled) return;
+            if (maxScroll <= 0) return;
 
-            const difference = targetFrame - currentFrame;
-            currentFrame += difference * 0.15;
-
-            if (Math.abs(difference) < 0.05) {
-                currentFrame = targetFrame;
-            }
-
-            const requestedFrame = Math.max(
+            const scrollProgress = Math.min(
                 1,
-                Math.min(
-                    TOTAL_FRAMES,
-                    Math.round(currentFrame)
-                )
+                Math.max(0, window.scrollY / maxScroll)
             );
 
-            let displayFrame = requestedFrame;
+            const nextFrame = Math.round(
+                scrollProgress * (TOTAL_FRAMES - 1)
+            ) + 1;
 
-            if (!imageCache[requestedFrame - 1]) {
-                displayFrame = 0;
-                for (let distance = 1; distance < TOTAL_FRAMES; distance++) {
-                    const forward = requestedFrame + distance;
-                    const backward = requestedFrame - distance;
-
-                    if (forward <= TOTAL_FRAMES && imageCache[forward - 1]) {
-                        displayFrame = forward;
-                        break;
-                    }
-                    if (backward >= 1 && imageCache[backward - 1]) {
-                        displayFrame = backward;
-                        break;
-                    }
-                }
-            }
-
-            if (
-                displayFrame > 0 &&
-                imageCache[displayFrame - 1] &&
-                displayFrame !== lastFrame
-            ) {
-                lastFrame = displayFrame;
-                setFrame(displayFrame);
-            }
-
-            animationId = requestAnimationFrame(animate);
+            setFrame(nextFrame);
         };
 
-        const loadAllFrames = async () => {
-            await loadBatch(1, INITIAL_FRAMES);
-            if (cancelled) return;
+        window.addEventListener("scroll", handleScroll, {
+            passive: true,
+        });
 
-            while (nextBatch <= TOTAL_FRAMES && !cancelled) {
-                const start = nextBatch;
-                const end = Math.min(start + BATCH_SIZE - 1, TOTAL_FRAMES);
-                await loadBatch(start, end);
-                if (cancelled) return;
-                nextBatch = end + 1;
-                await new Promise((resolve) => setTimeout(resolve, 30));
-            }
-        };
-
-        window.addEventListener("scroll", handleScroll, { passive: true });
-        window.addEventListener("resize", handleScroll);
-
-        // Handle Safari pageshow event to reset scroll on refresh
-        const handlePageShow = (event) => {
-            if (event.persisted) {
-                window.scrollTo(0, 0);
-                handleScroll();
-            }
-        };
-        window.addEventListener("pageshow", handlePageShow);
-
-        // Extra safety check for Safari's delayed layout paint
-        setTimeout(() => {
-            window.scrollTo(0, 0);
-            handleScroll();
-        }, 100);
-
-        animationId = requestAnimationFrame(animate);
-        loadAllFrames();
+        handleScroll();
 
         return () => {
-            cancelled = true;
-            if (animationId !== null) cancelAnimationFrame(animationId);
             window.removeEventListener("scroll", handleScroll);
-            window.removeEventListener("resize", handleScroll);
-            window.removeEventListener("pageshow", handlePageShow);
         };
     }, []);
 
-    const currentImageSrc = getFramePath(frame); // Keep this only if other parts of your component use it.
+    const currentImage = getFramePath(frame - 1);
+
+
+    //  const currentImageSrc = getFramePath(frame); // Keep this only if other parts of your component use it.
     {/*if (!isReady) {
         return (
             <div
@@ -231,7 +88,7 @@ export const HomeN = () => {
 
             <div className="fixed inset-0 z-0 h-screen w-screen overflow-hidden bg-black">
                 <img
-                    src={currentImageSrc}
+                    src={currentImage}
                     alt=""
                     draggable="false"
                     className="absolute inset-0 h-full w-full select-none object-cover object-left md:object-center"
