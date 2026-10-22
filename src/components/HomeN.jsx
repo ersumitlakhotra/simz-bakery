@@ -185,35 +185,38 @@ export const HomeN=()=> {
     }, [isReady]);
 
     // Animate the frame sequence according to page scrolling.
-    useEffect(() => {
+    
+useEffect(() => {
     if (!isReady) return;
 
-    const homeSection = document.querySelector("main#Home > section");
+    const homeSection = document.querySelector(
+        "main#Home > section"
+    );
 
     if (!homeSection) {
-        console.error("Home animation section was not found.");
+        console.error("Animation section not found.");
         return;
     }
 
-    let animationId = null;
+    let animationId;
 
     const handleScroll = () => {
         const sectionTop =
-            homeSection.getBoundingClientRect().top + window.scrollY;
+            homeSection.getBoundingClientRect().top +
+            window.scrollY;
 
-        const sectionHeight = homeSection.offsetHeight;
-        const scrollDistance = sectionHeight - window.innerHeight;
+        const scrollDistance =
+            homeSection.offsetHeight - window.innerHeight;
 
-        if (scrollDistance <= 0) {
-            targetFrame.current = 1;
-            return;
-        }
-
-        const relativeScroll = window.scrollY - sectionTop;
+        if (scrollDistance <= 0) return;
 
         const progress = Math.max(
             0,
-            Math.min(1, relativeScroll / scrollDistance)
+            Math.min(
+                1,
+                (window.scrollY - sectionTop) /
+                    scrollDistance
+            )
         );
 
         targetFrame.current =
@@ -224,23 +227,31 @@ export const HomeN=()=> {
         const difference =
             targetFrame.current - currentFrame.current;
 
-        currentFrame.current += difference * 0.12;
+        currentFrame.current += difference * 0.15;
 
-        if (Math.abs(difference) < 0.01) {
+        if (Math.abs(difference) < 0.05) {
             currentFrame.current = targetFrame.current;
         }
 
         const requestedFrame = Math.max(
             1,
-            Math.min(TOTAL_FRAMES, Math.round(currentFrame.current))
+            Math.min(
+                TOTAL_FRAMES,
+                Math.round(currentFrame.current)
+            )
         );
 
+        // Find the closest frame that has loaded.
         let displayFrame = requestedFrame;
 
         if (!imageCache.current[requestedFrame - 1]) {
-            displayFrame = lastFrame.current;
+            displayFrame = 0;
 
-            for (let distance = 1; distance <= TOTAL_FRAMES; distance++) {
+            for (
+                let distance = 1;
+                distance < TOTAL_FRAMES;
+                distance++
+            ) {
                 const forward = requestedFrame + distance;
                 const backward = requestedFrame - distance;
 
@@ -263,6 +274,7 @@ export const HomeN=()=> {
         }
 
         if (
+            displayFrame > 0 &&
             imageCache.current[displayFrame - 1] &&
             displayFrame !== lastFrame.current
         ) {
@@ -273,21 +285,22 @@ export const HomeN=()=> {
         animationId = requestAnimationFrame(animate);
     };
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    window.addEventListener("resize", handleScroll);
-    window.addEventListener("orientationchange", handleScroll);
+    window.addEventListener("scroll", handleScroll, {
+        passive: true,
+    });
 
+    window.addEventListener("resize", handleScroll);
+
+    // Synchronize with Safari's actual scroll position.
     handleScroll();
+
     animationId = requestAnimationFrame(animate);
 
     return () => {
         window.removeEventListener("scroll", handleScroll);
         window.removeEventListener("resize", handleScroll);
-        window.removeEventListener("orientationchange", handleScroll);
 
-        if (animationId !== null) {
-            cancelAnimationFrame(animationId);
-        }
+        cancelAnimationFrame(animationId);
     };
 }, [isReady]);
 
