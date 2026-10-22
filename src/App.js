@@ -1,17 +1,18 @@
 
 import "./App.css";
-import {HomeN} from "./components/HomeN.jsx";
+import {Home} from "./components/Home.jsx";
 import Navbar from "./components/navbar.jsx";
 import Gallery from "./components/gallery.jsx";
 import Testimonials from "./components/testimonials.jsx";
 import Booking from "./components/bookingn.jsx";
 import About from "./components/aboutus.jsx";
 
+
+function App() {
+
 if (typeof window !== "undefined" && "scrollRestoration" in window.history) {
     window.history.scrollRestoration = "manual";
 }
-
-function App() {
 
   return (
     <div className=" bg-[#f8f2e9] text-[#4a2a1d]">
@@ -20,7 +21,7 @@ function App() {
       <main id="Home" className="relative w-full bg-black">
         <section id="HomeScroll" className="relative h-[500vh] ">
           <div className="sticky top-0 h-screen overflow-hidden">
-            <HomeN/>
+            <Home/>
           </div>
         </section>
       </main>
