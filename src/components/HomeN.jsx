@@ -29,6 +29,14 @@ export const HomeN = () => {
     const getFramePath = (frameNumber) =>
         `/frames/frame_${String(frameNumber).padStart(4, "0")}.webp`;
 
+    useEffect(() => {
+        if ("scrollRestoration" in window.history) {
+            window.history.scrollRestoration = "manual";
+        }
+
+        window.scrollTo(0, 0);
+    }, []);
+
     // Preload all 314 frames.
     useEffect(() => {
         let cancelled = false;
@@ -142,13 +150,6 @@ export const HomeN = () => {
                 rafId = requestAnimationFrame(animateFrame);
                 animationId.current = rafId;
             }
-
-            console.log({
-    scrollY: window.scrollY,
-    sectionHeight: homeSection.offsetHeight,
-    windowHeight: window.innerHeight,
-    currentFrame: targetFrame.current,
-});
         };
 
         window.addEventListener("scroll", handleScroll, {
@@ -159,15 +160,18 @@ export const HomeN = () => {
 
         handleScroll();
 
+        const syncTimer = window.setTimeout(() => {
+            handleScroll();
+        }, 500);
+
         return () => {
             window.removeEventListener("scroll", handleScroll);
             window.removeEventListener("resize", handleScroll);
+            window.clearTimeout(syncTimer);
 
             if (rafId !== null) {
                 cancelAnimationFrame(rafId);
             }
-
-            animationId.current = null;
         };
     }, []);
 

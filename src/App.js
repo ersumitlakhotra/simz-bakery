@@ -9,11 +9,6 @@ import About from "./components/aboutus.jsx";
 
 
 function App() {
-
-if (typeof window !== "undefined" && "scrollRestoration" in window.history) {
-    window.history.scrollRestoration = "manual";
-}
-
   return (
     <div className=" bg-[#f8f2e9] text-[#4a2a1d]">
       <Navbar />
