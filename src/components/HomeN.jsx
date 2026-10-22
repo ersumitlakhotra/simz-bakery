@@ -76,104 +76,121 @@ export const HomeN = () => {
     }, []);
 
     // Map scroll position to frames and animate smoothly.
-    useEffect(() => {
-        const homeSection = document.querySelector(
-            "main#Home > section"
-        );
+  
+useEffect(() => {
+    let rafId = null;
+    let disposed = false;
+    let currentFrame = 1;
+    let targetFrame = 1;
 
-        if (!homeSection) {
-            console.error('Could not find "main#Home > section".');
+    const getHomeSection = () =>
+        document.querySelector("main#Home > section");
+
+    const updateTargetFrame = () => {
+        const homeSection = getHomeSection();
+
+        if (!homeSection) return;
+
+        const sectionTop =
+            homeSection.getBoundingClientRect().top + window.scrollY;
+
+        const sectionHeight = homeSection.offsetHeight;
+        const maxScroll = sectionHeight - window.innerHeight;
+
+        if (maxScroll <= 0) {
+            targetFrame = 1;
             return;
         }
 
-        let rafId = null;
-
-        const animateFrame = () => {
-            const difference =
-                targetFrame.current - currentFrame.current;
-
-            // Higher values follow scrolling more closely.
-            currentFrame.current += difference * 0.10;
-
-            if (Math.abs(difference) < 0.05) {
-                currentFrame.current = targetFrame.current;
-            }
-
-            const nextFrame = Math.max(
+        const progress = Math.max(
+            0,
+            Math.min(
                 1,
-                Math.min(
-                    TOTAL_FRAMES,
-                    Math.round(currentFrame.current)
-                )
-            );
+                (window.scrollY - sectionTop) / maxScroll
+            )
+        );
 
-            // Display only frames that have loaded successfully.
-            if (loadedFrames.current.has(nextFrame)) {
-                setFrame((previousFrame) =>
-                    previousFrame === nextFrame
-                        ? previousFrame
-                        : nextFrame
-                );
-            }
+        targetFrame =
+            Math.round(progress * (TOTAL_FRAMES - 1)) + 1;
+    };
 
-            if (currentFrame.current !== targetFrame.current) {
-                rafId = requestAnimationFrame(animateFrame);
-            } else {
-                rafId = null;
-            }
+    const animate = () => {
+        if (disposed) return;
 
-            animationId.current = rafId;
-        };
+        const difference = targetFrame - currentFrame;
 
-        const handleScroll = () => {
-            const rect = homeSection.getBoundingClientRect();
-            const sectionTop = rect.top + window.scrollY;
-            const sectionHeight = homeSection.offsetHeight;
+        currentFrame += difference * 0.25;
 
-            const maxScroll = sectionHeight - window.innerHeight;
+        if (Math.abs(difference) < 0.1) {
+            currentFrame = targetFrame;
+        }
 
-            if (maxScroll <= 0) {
-                targetFrame.current = 1;
-            } else {
-                const sectionScroll = window.scrollY - sectionTop;
+        const nextFrame = Math.max(
+            1,
+            Math.min(TOTAL_FRAMES, Math.round(currentFrame))
+        );
 
-                const progress = Math.max(
-                    0,
-                    Math.min(1, sectionScroll / maxScroll)
-                );
+        // Always update the requested frame.
+        // Do not stop the animation because a frame isn't loaded yet.
+        setFrame((previousFrame) =>
+            previousFrame === nextFrame ? previousFrame : nextFrame
+        );
 
-                targetFrame.current =
-                    Math.round(progress * (TOTAL_FRAMES - 1)) + 1;
-            }
+        if (currentFrame !== targetFrame) {
+            rafId = requestAnimationFrame(animate);
+        } else {
+            rafId = null;
+        }
+    };
 
-            if (rafId === null) {
-                rafId = requestAnimationFrame(animateFrame);
-                animationId.current = rafId;
-            }
-        };
+    const handleScroll = () => {
+        updateTargetFrame();
 
-        window.addEventListener("scroll", handleScroll, {
-            passive: true,
-        });
+        if (rafId === null) {
+            rafId = requestAnimationFrame(animate);
+        }
+    };
 
-        window.addEventListener("resize", handleScroll);
+    const syncAfterLayout = () => {
+        if (disposed) return;
 
         handleScroll();
 
-        const syncTimer = window.setTimeout(() => {
-            handleScroll();
-        }, 500);
+        // Recheck after the browser restores scroll position and layout.
+        requestAnimationFrame(() => {
+            if (!disposed) handleScroll();
+        });
+    };
 
-        return () => {
-            window.removeEventListener("scroll", handleScroll);
-            window.removeEventListener("resize", handleScroll);
-            window.clearTimeout(syncTimer);
+    window.addEventListener("scroll", handleScroll, {
+        passive: true,
+    });
 
-            if (rafId !== null) {
-                cancelAnimationFrame(rafId);
-            }
-        };
-    }, []);
+    window.addEventListener("resize", handleScroll);
+    window.addEventListener("pageshow", syncAfterLayout);
+
+    // Initial calculation.
+    syncAfterLayout();
+
+    // Additional synchronization after page refresh.
+    const timer = window.setTimeout(syncAfterLayout, 500);
+    const secondTimer = window.setTimeout(syncAfterLayout, 1500);
+
+    return () => {
+        disposed = true;
+
+        window.removeEventListener("scroll", handleScroll);
+        window.removeEventListener("resize", handleScroll);
+        window.removeEventListener("pageshow", syncAfterLayout);
+
+        window.clearTimeout(timer);
+        window.clearTimeout(secondTimer);
+
+        if (rafId !== null) {
+            cancelAnimationFrame(rafId);
+        }
+    };
+}, []);
 
     const currentImage = getFramePath(frame);
 
