@@ -17,46 +17,73 @@ import { LoaderCircle } from "lucide-react";
 export const HomeN = () => {
 
     const TOTAL_FRAMES = 314;
-
     const [frame, setFrame] = useState(1);
 
     const getFramePath = (frameNumber) =>
         `/frames/frame_${String(frameNumber).padStart(4, "0")}.webp`;
 
-    useEffect(() => {
-        const handleScroll = () => {
-            const homeSection = document.querySelector(
-                "main#Home > section"
-            );
-            const sectionHeight = homeSection.offsetHeight;
+    
+useEffect(() => {
+    const homeSection = document.querySelector("main#Home > section");
 
-            const maxScroll =
-                sectionHeight - window.innerHeight;
+    if (!homeSection) return;
 
-            if (maxScroll <= 0) return;
+    let targetFrame = 1;
+    let currentFrame = 1;
+    let animationId = null;
 
-            const scrollProgress = Math.min(
-                1,
-                Math.max(0, window.scrollY / maxScroll)
-            );
+    const handleScroll = () => {
+        const sectionHeight = homeSection.offsetHeight;
+        const maxScroll = sectionHeight - window.innerHeight;
 
-            const nextFrame = Math.round(
-                scrollProgress * (TOTAL_FRAMES - 1)
-            ) + 1;
+        if (maxScroll <= 0) return;
 
-            setFrame(nextFrame);
-        };
+        const scrollProgress = Math.min(
+            1,
+            Math.max(0, window.scrollY / maxScroll)
+        );
 
-        window.addEventListener("scroll", handleScroll, {
-            passive: true,
-        });
+        targetFrame = Math.round(
+            scrollProgress * (TOTAL_FRAMES - 1)
+        ) + 1;
 
-        handleScroll();
+        if (animationId === null) {
+            animationId = requestAnimationFrame(animateFrame);
+        }
+    };
 
-        return () => {
-            window.removeEventListener("scroll", handleScroll);
-        };
-    }, []);
+    const animateFrame = () => {
+        const difference = targetFrame - currentFrame;
+
+        // Smoothly approach the target frame
+        currentFrame += difference * 0.15;
+
+        if (Math.abs(difference) < 0.1) {
+            currentFrame = targetFrame;
+        }
+
+        const nextFrame = Math.max(
+            1,
+            Math.min(TOTAL_FRAMES, Math.round(currentFrame))
+        );
+
+        setFrame((previousFrame) =>
+            previousFrame !== nextFrame ? nextFrame : previousFrame
+        );
+
+        if (currentFrame !== targetFrame) {
+            animationId = requestAnimationFrame(animateFrame);
+        } else {
+            animationId = null;
+        }
+    };
+
+    window.addEventListener("scroll", handleScroll, {
+        passive: true,
+    });
+
+    handleScroll();
+}, []);
 
     const currentImage = getFramePath(frame - 1);
 
