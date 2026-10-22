@@ -14,123 +14,307 @@ import BabyShowerCakeDetailMobile from "../cards/babyshower_mobile.jsx";
 import { LoaderCircle } from "lucide-react";
 
 
-export const HomeN = () => {
-
-    const TOTAL_FRAMES = 314;
+export const HomeN=()=> {
+    const TOTAL_FRAMES = 380;
+    const INITIAL_FRAMES = 20;
+    const BATCH_SIZE = 40;
 
     const [frame, setFrame] = useState(1);
     const [isReady, setIsReady] = useState(false);
 
+    const targetFrame = useRef(1);
+    const currentFrame = useRef(1);
+    const lastFrame = useRef(1);
+    const rafRef = useRef(null);
+
+    const imageCache = useRef([]);
+    const loadingFrames = useRef(new Set());
+    const cancelledRef = useRef(false);
+    const nextBatchRef = useRef(INITIAL_FRAMES + 1);
+
     const getFramePath = (frameNumber) =>
         `/frames/frame_${String(frameNumber).padStart(4, "0")}.webp`;
 
-    const [frames, setFrames] = useState([]);
+    const loadFrame = (frameNumber) => {
+        if (
+            frameNumber < 1 ||
+            frameNumber > TOTAL_FRAMES ||
+            imageCache.current[frameNumber - 1] ||
+            loadingFrames.current.has(frameNumber)
+        ) {
+            return Promise.resolve();
+        }
 
+        loadingFrames.current.add(frameNumber);
+
+        return new Promise((resolve) => {
+            const image = new Image();
+            let settled = false;
+
+            const finish = (success) => {
+                if (settled) return;
+                settled = true;
+
+                loadingFrames.current.delete(frameNumber);
+
+                if (success && !cancelledRef.current) {
+                    imageCache.current[frameNumber - 1] = image;
+                }
+
+                resolve();
+            };
+
+            image.onload = () => finish(true);
+            image.onerror = () => {
+                console.error(
+                    `Failed to load frame ${frameNumber}:`,
+                    getFramePath(frameNumber)
+                );
+                finish(false);
+            };
+
+            image.src = getFramePath(frameNumber);
+
+            // Handle images already available in browser cache.
+            if (image.complete) {
+                finish(image.naturalWidth > 0);
+            }
+        });
+    };
+
+    const loadBatch = async (startFrame, endFrame) => {
+        if (cancelledRef.current) return;
+
+        const frames = [];
+
+        for (
+            let i = startFrame;
+            i <= Math.min(endFrame, TOTAL_FRAMES);
+            i++
+        ) {
+            frames.push(i);
+        }
+
+        await Promise.all(
+            frames.map((frameNumber) => loadFrame(frameNumber))
+        );
+    };
+
+    // Render the website immediately; load frames in the background.
     useEffect(() => {
-        let cancelled = false;
+        cancelledRef.current = false;
 
-        const loadFrames = async () => {
-            const loadedFrames = await Promise.all(
-                Array.from({ length: TOTAL_FRAMES }, (_, index) => {
-                    return new Promise((resolve, reject) => {
-                        const image = new Image();
+        setIsReady(true);
 
-                        image.onload = () => resolve(image);
-                        image.onerror = () =>
-                            reject(new Error(`Failed to load frame ${index + 1}`));
+        const loadAllFrames = async () => {
+            await loadBatch(1, INITIAL_FRAMES);
 
-                        image.src = getFramePath(index + 1);
-                    });
-                })
-            );
+            if (cancelledRef.current) return;
 
-            if (!cancelled) {
-                setFrames(loadedFrames);
-                setIsReady(true);
+            nextBatchRef.current = INITIAL_FRAMES + 1;
+
+            while (
+                nextBatchRef.current <= TOTAL_FRAMES &&
+                !cancelledRef.current
+            ) {
+                const start = nextBatchRef.current;
+                const end = Math.min(
+                    start + BATCH_SIZE - 1,
+                    TOTAL_FRAMES
+                );
+
+                await loadBatch(start, end);
+
+                if (cancelledRef.current) return;
+
+                nextBatchRef.current = end + 1;
+
+                await new Promise((resolve) =>
+                    setTimeout(resolve, 30)
+                );
             }
         };
 
-        loadFrames().catch((error) => {
-            console.error("Failed to load animation frames:", error);
-        });
+        loadAllFrames();
 
         return () => {
-            cancelled = true;
+            cancelledRef.current = true;
         };
     }, []);
-    
+
+    // Restore normal scrolling and start at the top.
     useEffect(() => {
         if ("scrollRestoration" in window.history) {
             window.history.scrollRestoration = "manual";
         }
 
-        window.scrollTo({
-            top: 0,
-            left: 0,
-            behavior: "instant",
-        });
-
-        requestAnimationFrame(() => {
-            window.scrollTo(0, 0);
-        });
-    }, []);
-
-    useEffect(() => {
-        if (!isReady) return;
-
-        const homeSection = document.querySelector("main#Home > section");
-        if (!homeSection) return;
-
-        const handleScroll = () => {
-            const scrollDistance =
-                homeSection.offsetHeight - window.innerHeight;
-
-            if (scrollDistance <= 0) return;
-
-            const progress = Math.max(
-                0,
-                Math.min(
-                    1,
-                    (window.scrollY - homeSection.offsetTop) / scrollDistance
-                )
-            );
-
-            setFrame(
-                Math.min(
-                    TOTAL_FRAMES,
-                    Math.max(1, Math.round(1 + progress * (TOTAL_FRAMES - 1)))
-                )
-            );
+        // Wait until Safari has completed its initial layout.
+        const resetScroll = () => {
+            window.scrollTo({ top: 0, left: 0, behavior: "instant" });
         };
 
-        window.addEventListener("scroll", handleScroll, { passive: true });
-        handleScroll();
+        resetScroll();
 
-        return () => window.removeEventListener("scroll", handleScroll);
+        const raf = requestAnimationFrame(() => {
+            resetScroll();
+        });
+
+        return () => {
+            cancelAnimationFrame(raf);
+            if ("scrollRestoration" in window.history) {
+                window.history.scrollRestoration = "auto";
+            }
+        };
+    }, []);
+
+    // Manage page scrolling while the experience initializes.
+    useEffect(() => {
+        if (isReady) {
+            document.body.style.overflow = "";
+            document.documentElement.style.overflow = "";
+            return;
+        }
+
+        document.body.style.overflow = "hidden";
+        document.documentElement.style.overflow = "hidden";
+
+        return () => {
+            document.body.style.overflow = "";
+            document.documentElement.style.overflow = "";
+        };
     }, [isReady]);
 
+    // Animate the frame sequence according to page scrolling.
+    useEffect(() => {
+    if (!isReady) return;
+
+    const homeSection = document.querySelector("main#Home > section");
+
+    if (!homeSection) {
+        console.error("Home animation section was not found.");
+        return;
+    }
+
+    let animationId = null;
+
+    const handleScroll = () => {
+        const sectionTop =
+            homeSection.getBoundingClientRect().top + window.scrollY;
+
+        const sectionHeight = homeSection.offsetHeight;
+        const scrollDistance = sectionHeight - window.innerHeight;
+
+        if (scrollDistance <= 0) {
+            targetFrame.current = 1;
+            return;
+        }
+
+        const relativeScroll = window.scrollY - sectionTop;
+
+        const progress = Math.max(
+            0,
+            Math.min(1, relativeScroll / scrollDistance)
+        );
+
+        targetFrame.current =
+            1 + progress * (TOTAL_FRAMES - 1);
+    };
+
+    const animate = () => {
+        const difference =
+            targetFrame.current - currentFrame.current;
+
+        currentFrame.current += difference * 0.12;
+
+        if (Math.abs(difference) < 0.01) {
+            currentFrame.current = targetFrame.current;
+        }
+
+        const requestedFrame = Math.max(
+            1,
+            Math.min(TOTAL_FRAMES, Math.round(currentFrame.current))
+        );
+
+        let displayFrame = requestedFrame;
+
+        if (!imageCache.current[requestedFrame - 1]) {
+            displayFrame = lastFrame.current;
+
+            for (let distance = 1; distance <= TOTAL_FRAMES; distance++) {
+                const forward = requestedFrame + distance;
+                const backward = requestedFrame - distance;
+
+                if (
+                    forward <= TOTAL_FRAMES &&
+                    imageCache.current[forward - 1]
+                ) {
+                    displayFrame = forward;
+                    break;
+                }
+
+                if (
+                    backward >= 1 &&
+                    imageCache.current[backward - 1]
+                ) {
+                    displayFrame = backward;
+                    break;
+                }
+            }
+        }
+
+        if (
+            imageCache.current[displayFrame - 1] &&
+            displayFrame !== lastFrame.current
+        ) {
+            lastFrame.current = displayFrame;
+            setFrame(displayFrame);
+        }
+
+        animationId = requestAnimationFrame(animate);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("resize", handleScroll);
+    window.addEventListener("orientationchange", handleScroll);
+
+    handleScroll();
+    animationId = requestAnimationFrame(animate);
+
+    return () => {
+        window.removeEventListener("scroll", handleScroll);
+        window.removeEventListener("resize", handleScroll);
+        window.removeEventListener("orientationchange", handleScroll);
+
+        if (animationId !== null) {
+            cancelAnimationFrame(animationId);
+        }
+    };
+}, [isReady]);
+
+    const currentImage = imageCache.current[frame - 1];
+
     const currentImageSrc =
-        frames[frame - 1]?.src || getFramePath(1);
+        currentImage?.src || getFramePath(1);
 
     // Keep this only if other parts of your component use it.
     if (!isReady) {
         return (
             <div
-                style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100%',
-                    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent background
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    zIndex: 9999, // Ensure it's on top
-                }}
-            >
-                <LoaderCircle className="h-12 w-12 animate-spin " />
-            </div>
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent background
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        zIndex: 9999, // Ensure it's on top
+                    }}
+                >
+                  <LoaderCircle className="h-12 w-12 animate-spin " />
+                </div>
         );
     }
 
@@ -138,13 +322,13 @@ export const HomeN = () => {
         <>
 
             <div className="fixed inset-0 z-0 h-screen w-screen overflow-hidden bg-black">
-                <img
+               <img
                     src={currentImageSrc}
                     alt=""
                     draggable="false"
                     className="absolute inset-0 h-full w-full select-none object-cover object-left md:object-center"
                 />
-
+               
             </div>
 
             <Hero frame={frame} />
