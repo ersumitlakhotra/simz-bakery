@@ -48,12 +48,7 @@ export const HomeN = () => {
                     loadedFrames.current.add(i);
 
                 } catch (error) {
-                    console.error(`Failed to decode frame ${i}`, error);
                 }
-            };
-
-            img.onerror = () => {
-                console.error(`Failed to load frame ${i}: ${getFramePath(i)}`);
             };
 
             images.current[i] = img;
@@ -147,6 +142,13 @@ export const HomeN = () => {
                 rafId = requestAnimationFrame(animateFrame);
                 animationId.current = rafId;
             }
+
+            console.log({
+    scrollY: window.scrollY,
+    sectionHeight: homeSection.offsetHeight,
+    windowHeight: window.innerHeight,
+    currentFrame: targetFrame.current,
+});
         };
 
         window.addEventListener("scroll", handleScroll, {
