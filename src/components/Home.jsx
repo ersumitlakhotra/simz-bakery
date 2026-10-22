@@ -14,14 +14,24 @@ import BabyShowerCakeDetailMobile from "../cards/babyshower_mobile.jsx";
 import { LoaderCircle } from "lucide-react";
 
 
-export const Home = ({
-    TOTAL_FRAMES, INITIAL_FRAMES, BATCH_SIZE,
-    frame, setFrame, isReady, setIsReady,
-    targetFrame, currentFrame,
-    lastFrame, rafRef, imageCache, loadingFrames,
-    cancelledRef,
-    nextBatchRef,
-})=> {
+export const Home=()=> {
+    const TOTAL_FRAMES = 380;
+    const INITIAL_FRAMES = 20;
+    const BATCH_SIZE = 50;
+
+    const [frame, setFrame] = useState(1);
+    const [isReady, setIsReady] = useState(false);
+
+    const targetFrame = useRef(1);
+    const currentFrame = useRef(1);
+    const lastFrame = useRef(1);
+    const rafRef = useRef(null);
+
+    const imageCache = useRef([]);
+    const loadingFrames = useRef(new Set());
+    const cancelledRef = useRef(false);
+    const nextBatchRef = useRef(INITIAL_FRAMES + 1);
+
     const getFramePath = (frameNumber) =>
         `/frames/frame_${String(frameNumber).padStart(4, "0")}.webp`;
 

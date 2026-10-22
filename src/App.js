@@ -1,7 +1,6 @@
 
-import { useEffect, useRef, useState } from "react";
 import "./App.css";
-import {Home} from "./components/Home.jsx";
+import {HomeN} from "./components/HomeN.jsx";
 import Navbar from "./components/navbar.jsx";
 import Gallery from "./components/gallery.jsx";
 import Testimonials from "./components/testimonials.jsx";
@@ -9,22 +8,7 @@ import Booking from "./components/bookingn.jsx";
 import About from "./components/aboutus.jsx";
 
 function App() {
-  const TOTAL_FRAMES = 380;
-  const INITIAL_FRAMES = 20;
-  const BATCH_SIZE = 50;
 
-  const [frame, setFrame] = useState(1);
-  const [isReady, setIsReady] = useState(false);
-
-  const targetFrame = useRef(1);
-  const currentFrame = useRef(1);
-  const lastFrame = useRef(1);
-  const rafRef = useRef(null);
-
-  const imageCache = useRef([]);
-  const loadingFrames = useRef(new Set());
-  const cancelledRef = useRef(false);
-  const nextBatchRef = useRef(INITIAL_FRAMES + 1);
   return (
     <div className=" bg-[#f8f2e9] text-[#4a2a1d]">
       <Navbar />
@@ -32,15 +16,7 @@ function App() {
       <main id="Home" className="relative w-full bg-black">
         <section id="HomeScroll" className="relative h-[500vh] ">
           <div className="sticky top-0 h-screen overflow-hidden">
-            <Home
-              TOTAL_FRAMES={TOTAL_FRAMES}
-              INITIAL_FRAMES={INITIAL_FRAMES}
-              BATCH_SIZE={BATCH_SIZE}
-              frame={frame} setFrame={setFrame} isReady={isReady} setIsReady={setIsReady}
-              targetFrame={targetFrame} currentFrame={currentFrame}
-              lastFrame={lastFrame} rafRef={rafRef} imageCache={imageCache} loadingFrames={loadingFrames}
-              cancelledRef={cancelledRef}
-              nextBatchRef={nextBatchRef} />
+            <HomeN/>
           </div>
         </section>
       </main>
