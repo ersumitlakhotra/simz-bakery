@@ -1,12 +1,6 @@
 
 /* eslint-disable react-hooks/exhaustive-deps */
-import {
-    useEffect,
-    useLayoutEffect,
-    useRef,
-    useState,
-} from "react";
-
+import { useEffect, useRef, useState } from "react";
 import Hero from "./Hero.jsx";
 import BirthdayCakeCard from "../cards/birthday.jsx";
 import BirthdayCakeCardMobile from "../cards/birthday_mobile.jsx";
@@ -22,6 +16,7 @@ import { LoaderCircle } from "lucide-react";
 
 export const HomeN = () => {
     const TOTAL_FRAMES = 380;
+    const INITIAL_FRAMES = 20;
     const BATCH_SIZE = 40;
 
     const [frame, setFrame] = useState(1);
@@ -33,12 +28,211 @@ export const HomeN = () => {
     const rafRef = useRef(null);
 
     const imageCache = useRef([]);
+    const loadingFrames = useRef(new Map());
 
     const getFramePath = (frameNumber) =>
         `/frames/frame_${String(frameNumber).padStart(4, "0")}.webp`;
 
-    // Reset the scroll position before the page paints.
-    useLayoutEffect(() => {
+    // Load and decode an image, with retries for failed requests.
+    const loadFrame = (frameNumber, retries = 1) => {
+        if (frameNumber < 1 || frameNumber > TOTAL_FRAMES) {
+            return Promise.resolve(null);
+        }
+
+        const cachedImage = imageCache.current[frameNumber - 1];
+
+        if (cachedImage?.complete && cachedImage.naturalWidth > 0) {
+            return Promise.resolve(cachedImage);
+        }
+
+        const existingRequest = loadingFrames.current.get(frameNumber);
+
+        if (existingRequest) {
+            return existingRequest;
+        }
+
+        const request = (async () => {
+            for (let attempt = 0; attempt <= retries; attempt++) {
+                const image = new Image();
+                const src = getFramePath(frameNumber);
+
+                const loadedImage = await new Promise((resolve) => {
+                    let settled = false;
+
+                    const finish = (result) => {
+                        if (settled) return;
+                        settled = true;
+
+                        image.onload = null;
+                        image.onerror = null;
+
+                        resolve(result);
+                    };
+
+                    image.onload = () => {
+                        finish(
+                            image.naturalWidth > 0 ? image : null
+                        );
+                    };
+
+                    image.onerror = () => {
+                        finish(null);
+                    };
+
+                    image.src = src;
+
+                    // Handle images already available in browser cache.
+                    if (image.complete) {
+                        finish(
+                            image.naturalWidth > 0 ? image : null
+                        );
+                    }
+                });
+
+                if (!loadedImage) {
+                    console.error(
+                        `Frame ${frameNumber} load attempt ${
+                            attempt + 1
+                        } failed:`,
+                        src
+                    );
+
+                    continue;
+                }
+
+                // Decode before using the image when supported.
+                if (typeof loadedImage.decode === "function") {
+                    try {
+                        await loadedImage.decode();
+                    } catch {
+                        // Some browsers reject decode even when the
+                        // image is loaded. Verify its actual dimensions.
+                    }
+                }
+
+                if (loadedImage.naturalWidth > 0) {
+                    imageCache.current[frameNumber - 1] =
+                        loadedImage;
+
+                    return loadedImage;
+                }
+            }
+
+       
+
+            return null;
+        })();
+
+        loadingFrames.current.set(frameNumber, request);
+
+        // Remove completed requests so failed frames can be retried.
+        request.then(() => {
+            if (
+                loadingFrames.current.get(frameNumber) === request
+            ) {
+                loadingFrames.current.delete(frameNumber);
+            }
+        });
+
+        return request;
+    };
+
+    const loadBatch = async (startFrame, endFrame) => {
+        const frames = [];
+
+        for (
+            let i = startFrame;
+            i <= Math.min(endFrame, TOTAL_FRAMES);
+            i++
+        ) {
+            frames.push(i);
+        }
+
+        await Promise.all(
+            frames.map((frameNumber) => loadFrame(frameNumber))
+        );
+    };
+
+    // Load frame 1 before rendering the experience.
+    // Then load all remaining frames in batches.
+    useEffect(() => {
+        let cancelled = false;
+
+        const loadAllFrames = async () => {
+            const firstImage = await loadFrame(1, 2);
+
+            if (cancelled) return;
+
+            if (firstImage) {
+                imageCache.current[0] = firstImage;
+
+                targetFrame.current = 1;
+                currentFrame.current = 1;
+                lastFrame.current = 1;
+
+                setFrame(1);
+                setIsReady(true);
+            } else {
+                // Avoid leaving the entire website stuck on the loader
+                // if the first frame cannot be retrieved.
+                console.error(
+                    "Frame 1 could not be loaded. Check the deployed image path:",
+                    getFramePath(1)
+                );
+
+                setIsReady(true);
+                return;
+            }
+
+            // Load the initial frames immediately after frame 1.
+            await loadBatch(2, INITIAL_FRAMES);
+
+            if (cancelled) return;
+
+            // Load the remaining frames in batches.
+            for (
+                let start = INITIAL_FRAMES + 1;
+                start <= TOTAL_FRAMES;
+                start += BATCH_SIZE
+            ) {
+                if (cancelled) return;
+
+                const end = Math.min(
+                    start + BATCH_SIZE - 1,
+                    TOTAL_FRAMES
+                );
+
+                await loadBatch(start, end);
+
+                if (cancelled) return;
+
+                // Give the browser a brief opportunity to render.
+                await new Promise((resolve) =>
+                    setTimeout(resolve, 30)
+                );
+            }
+
+            if (!cancelled) {
+                console.log(
+                    "Frame loading complete:",
+                    imageCache.current.filter(Boolean).length,
+                    "of",
+                    TOTAL_FRAMES
+                );
+            }
+        };
+
+        loadAllFrames();
+
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    // Start the page at the top and disable automatic scroll restoration.
+    useEffect(() => {
+        const previousRestoration = window.history.scrollRestoration;
+
         if ("scrollRestoration" in window.history) {
             window.history.scrollRestoration = "manual";
         }
@@ -53,213 +247,163 @@ export const HomeN = () => {
             cancelAnimationFrame(resetScroll);
 
             if ("scrollRestoration" in window.history) {
-                window.history.scrollRestoration = "auto";
+                window.history.scrollRestoration =
+                    previousRestoration;
             }
         };
     }, []);
 
-    // Load every frame before removing the loader.
+    // Prevent scrolling until the first frame is ready.
     useEffect(() => {
-        let cancelled = false;
-
-        const loadFrame = (frameNumber) =>
-            new Promise((resolve) => {
-                const image = new Image();
-                let settled = false;
-
-                const finish = (result) => {
-                    if (settled) return;
-
-                    settled = true;
-                    resolve(result);
-                };
-
-                image.onload = () => finish(image);
-
-                image.onerror = () => {
-                    console.error(
-                        `Failed to load frame ${frameNumber}:`,
-                        getFramePath(frameNumber)
-                    );
-
-                    finish(null);
-                };
-
-                image.src = getFramePath(frameNumber);
-
-                if (image.complete) {
-                    finish(
-                        image.naturalWidth > 0 ? image : null
-                    );
-                }
-            });
-
-        const loadAllFrames = async () => {
-            const images = new Array(TOTAL_FRAMES);
-
-            for (
-                let start = 1;
-                start <= TOTAL_FRAMES;
-                start += BATCH_SIZE
-            ) {
-                if (cancelled) return;
-
-                const end = Math.min(
-                    start + BATCH_SIZE - 1,
-                    TOTAL_FRAMES
-                );
-
-                const batch = await Promise.all(
-                    Array.from(
-                        { length: end - start + 1 },
-                        (_, index) => loadFrame(start + index)
-                    )
-                );
-
-                batch.forEach((image, index) => {
-                    images[start + index - 1] = image;
-                });
-            }
-
-            if (cancelled) return;
-
-            imageCache.current = images;
-
-            // Initialize frame and scroll state before displaying the page.
-            targetFrame.current = 1;
-            currentFrame.current = 1;
-            lastFrame.current = 1;
-
-            setFrame(1);
-
-            window.scrollTo(0, 0);
-
-            requestAnimationFrame(() => {
-                if (cancelled) return;
-
-                window.scrollTo(0, 0);
-                setIsReady(true);
-            });
-        };
-
-        loadAllFrames();
-
-        return () => {
-            cancelled = true;
-        };
-    }, []);
-
-    // Prevent scrolling while frames are loading.
-    useEffect(() => {
-        document.body.style.overflow = isReady ? "" : "hidden";
-        document.documentElement.style.overflow = isReady
-            ? ""
-            : "hidden";
-
-        return () => {
+        if (isReady) {
             document.body.style.overflow = "";
             document.documentElement.style.overflow = "";
-        };
-    }, [isReady]);
-
-    // Animate frames using the actual document scroll position.
-    
-useEffect(() => {
-    if (!isReady) return;
-
-    const homeSection = document.getElementById("HomeScroll");
-
-    if (!homeSection) {
-        console.error("HomeScroll section not found");
-        return;
-    }
-
-    let animationRunning = true;
-
-    const handleScroll = () => {
-        const sectionTop =
-            homeSection.getBoundingClientRect().top +
-            window.scrollY;
-
-        const scrollDistance =
-            homeSection.offsetHeight - window.innerHeight;
-
-        if (scrollDistance <= 0) {
-            targetFrame.current = 1;
             return;
         }
 
-        const relativeScroll = window.scrollY - sectionTop;
+        const previousBodyOverflow = document.body.style.overflow;
+        const previousHtmlOverflow =
+            document.documentElement.style.overflow;
 
-        const progress = Math.max(
-            0,
-            Math.min(1, relativeScroll / scrollDistance)
+        document.body.style.overflow = "hidden";
+        document.documentElement.style.overflow = "hidden";
+
+        return () => {
+            document.body.style.overflow = previousBodyOverflow;
+            document.documentElement.style.overflow =
+                previousHtmlOverflow;
+        };
+    }, [isReady]);
+
+    // Animate frames according to the Home section's scroll progress.
+    useEffect(() => {
+        if (!isReady) return;
+
+        const homeSection = document.querySelector(
+            "main#Home > section"
         );
 
-        targetFrame.current =
-            1 + progress * (TOTAL_FRAMES - 1);
-    };
-
-    const animate = () => {
-        if (!animationRunning) return;
-
-        const difference =
-            targetFrame.current - currentFrame.current;
-
-        currentFrame.current += difference * 0.15;
-
-        if (Math.abs(difference) < 0.05) {
-            currentFrame.current = targetFrame.current;
+        if (!homeSection) {
+            console.error(
+                'Scroll animation section not found. Expected "main#Home > section".'
+            );
+            return;
         }
 
-        const requestedFrame = Math.max(
-            1,
-            Math.min(
-                TOTAL_FRAMES,
-                Math.round(currentFrame.current)
-            )
-        );
+        let animationRunning = true;
 
-        const image = imageCache.current[requestedFrame - 1];
+        const handleScroll = () => {
+            const sectionTop =
+                homeSection.getBoundingClientRect().top +
+                window.scrollY;
 
-        if (image && requestedFrame !== lastFrame.current) {
-            lastFrame.current = requestedFrame;
-            setFrame(requestedFrame);
-        }
+            const scrollDistance =
+                homeSection.offsetHeight - window.innerHeight;
+
+            if (scrollDistance <= 0) {
+                targetFrame.current = 1;
+                return;
+            }
+
+            const relativeScroll = window.scrollY - sectionTop;
+
+            const progress = Math.max(
+                0,
+                Math.min(1, relativeScroll / scrollDistance)
+            );
+
+            targetFrame.current =
+                1 + progress * (TOTAL_FRAMES - 1);
+        };
+
+        const animate = () => {
+            if (!animationRunning) return;
+
+            const difference =
+                targetFrame.current - currentFrame.current;
+
+            currentFrame.current += difference * 0.1;
+
+            if (Math.abs(difference) < 0.01) {
+                currentFrame.current = targetFrame.current;
+            }
+
+            const requestedFrame = Math.max(
+                1,
+                Math.min(
+                    TOTAL_FRAMES,
+                    Math.round(currentFrame.current)
+                )
+            );
+
+            let displayFrame = requestedFrame;
+
+            // If the requested frame is not loaded yet, find the
+            // closest available frame to avoid a blank background.
+            if (!imageCache.current[requestedFrame - 1]) {
+                displayFrame = lastFrame.current;
+
+                for (let distance = 1; distance <= TOTAL_FRAMES; distance++) {
+                    const forward = requestedFrame + distance;
+                    const backward = requestedFrame - distance;
+
+                    if (
+                        forward <= TOTAL_FRAMES &&
+                        imageCache.current[forward - 1]
+                    ) {
+                        displayFrame = forward;
+                        break;
+                    }
+
+                    if (
+                        backward >= 1 &&
+                        imageCache.current[backward - 1]
+                    ) {
+                        displayFrame = backward;
+                        break;
+                    }
+                }
+            }
+
+            if (
+                imageCache.current[displayFrame - 1] &&
+                displayFrame !== lastFrame.current
+            ) {
+                lastFrame.current = displayFrame;
+                setFrame(displayFrame);
+            }
+
+            rafRef.current = requestAnimationFrame(animate);
+        };
+
+        window.addEventListener("scroll", handleScroll, {
+            passive: true,
+        });
+
+        window.addEventListener("resize", handleScroll);
+
+        handleScroll();
 
         rafRef.current = requestAnimationFrame(animate);
-    };
 
-    window.addEventListener("scroll", handleScroll, {
-        passive: true,
-    });
+        return () => {
+            animationRunning = false;
 
-    window.addEventListener("resize", handleScroll);
+            window.removeEventListener("scroll", handleScroll);
+            window.removeEventListener("resize", handleScroll);
 
-    handleScroll();
-
-    rafRef.current = requestAnimationFrame(animate);
-
-    return () => {
-        animationRunning = false;
-
-        window.removeEventListener("scroll", handleScroll);
-        window.removeEventListener("resize", handleScroll);
-
-        if (rafRef.current !== null) {
-            cancelAnimationFrame(rafRef.current);
-            rafRef.current = null;
-        }
-    };
-}, [isReady]);
-
+            if (rafRef.current !== null) {
+                cancelAnimationFrame(rafRef.current);
+                rafRef.current = null;
+            }
+        };
+    }, [isReady]);
 
     const currentImage = imageCache.current[frame - 1];
 
     const currentImageSrc =
         currentImage?.src || getFramePath(1);
 
-    // Keep the loader visible until all frames finish loading.
     if (!isReady) {
         return (
             <div
@@ -282,13 +426,19 @@ useEffect(() => {
 
     return (
         <>
-            {/* Fixed background frame */}
             <div className="fixed inset-0 z-0 h-screen w-screen overflow-hidden bg-black">
                 <img
+                    key={currentImageSrc}
                     src={currentImageSrc}
                     alt=""
                     draggable="false"
                     className="absolute inset-0 h-full w-full select-none object-cover object-left md:object-center"
+                    onError={() => {
+                        console.error(
+                            "Displayed frame failed to render:",
+                            currentImageSrc
+                        );
+                    }}
                 />
             </div>
 
