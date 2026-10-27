@@ -1,5 +1,10 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useEffect, useRef, useState } from "react";
+import {
+    useEffect,
+    useLayoutEffect,
+    useRef,
+    useState,
+} from "react";
 import Hero from "./Hero.jsx";
 import BirthdayCakeCard from "../cards/birthday.jsx";
 import BirthdayCakeCardMobile from "../cards/birthday_mobile.jsx";
@@ -15,8 +20,11 @@ import { LoaderCircle } from "lucide-react";
 
 
 export const HomeN=()=> {
-    
+
+
+
 const TOTAL_FRAMES = 380;
+const BATCH_SIZE = 40;
 
 const [frame, setFrame] = useState(1);
 const [isReady, setIsReady] = useState(false);
@@ -25,43 +33,69 @@ const targetFrame = useRef(1);
 const currentFrame = useRef(1);
 const lastFrame = useRef(1);
 const rafRef = useRef(null);
+
 const imageCache = useRef([]);
 
 const getFramePath = (frameNumber) =>
     `/frames/frame_${String(frameNumber).padStart(4, "0")}.webp`;
 
-// Load all frames first, then remove the loader.
+// Reset scroll position before the page paints.
+useLayoutEffect(() => {
+    if ("scrollRestoration" in window.history) {
+        window.history.scrollRestoration = "manual";
+    }
+
+    window.scrollTo(0, 0);
+
+    const resetScroll = requestAnimationFrame(() => {
+        window.scrollTo(0, 0);
+    });
+
+    return () => {
+        cancelAnimationFrame(resetScroll);
+
+        if ("scrollRestoration" in window.history) {
+            window.history.scrollRestoration = "auto";
+        }
+    };
+}, []);
+
+// Load all 380 frames before removing the loader.
 useEffect(() => {
     let cancelled = false;
 
+    const loadFrame = (frameNumber) =>
+        new Promise((resolve) => {
+            const image = new Image();
+            let settled = false;
+
+            const finish = (result) => {
+                if (settled) return;
+                settled = true;
+                resolve(result);
+            };
+
+            image.onload = () => finish(image);
+
+            image.onerror = () => {
+                console.error(
+                    `Failed to load frame ${frameNumber}:`,
+                    getFramePath(frameNumber)
+                );
+                finish(null);
+            };
+
+            image.src = getFramePath(frameNumber);
+
+            if (image.complete) {
+                finish(
+                    image.naturalWidth > 0 ? image : null
+                );
+            }
+        });
+
     const loadAllFrames = async () => {
         const images = new Array(TOTAL_FRAMES);
-
-        const loadFrame = (frameNumber) =>
-            new Promise((resolve) => {
-                const image = new Image();
-
-                image.onload = () => resolve(image);
-
-                image.onerror = () => {
-                    console.error(
-                        `Failed to load frame ${frameNumber}:`,
-                        getFramePath(frameNumber)
-                    );
-                    resolve(null);
-                };
-
-                image.src = getFramePath(frameNumber);
-
-                if (image.complete) {
-                    resolve(
-                        image.naturalWidth > 0 ? image : null
-                    );
-                }
-            });
-
-        // Load frames in batches to avoid too many simultaneous requests.
-        const BATCH_SIZE = 40;
 
         for (
             let start = 1;
@@ -91,9 +125,21 @@ useEffect(() => {
 
         imageCache.current = images;
 
-        // Remove the loader only after every frame has finished loading.
-        setFrame(1);
-        setIsReady(true);
+        // Reset animation state before showing the website.
+        window.scrollTo(0, 0);
+
+        requestAnimationFrame(() => {
+            if (cancelled) return;
+
+            window.scrollTo(0, 0);
+
+            targetFrame.current = 1;
+            currentFrame.current = 1;
+            lastFrame.current = 1;
+
+            setFrame(1);
+            setIsReady(true);
+        });
     };
 
     loadAllFrames();
@@ -103,22 +149,7 @@ useEffect(() => {
     };
 }, []);
 
-// Restore normal scrolling and start at the top.
-useEffect(() => {
-    if ("scrollRestoration" in window.history) {
-        window.history.scrollRestoration = "manual";
-    }
-
-    window.scrollTo(0, 0);
-
-    return () => {
-        if ("scrollRestoration" in window.history) {
-            window.history.scrollRestoration = "auto";
-        }
-    };
-}, []);
-
-// Manage scrolling while frames load.
+// Lock scrolling while frames are loading.
 useEffect(() => {
     document.body.style.overflow = isReady ? "" : "hidden";
     document.documentElement.style.overflow = isReady
@@ -139,21 +170,31 @@ useEffect(() => {
         "main#Home > section"
     );
 
-    if (!homeSection) return;
+    if (!homeSection) {
+        console.error(
+            'Animation section not found: main#Home > section'
+        );
+        return;
+    }
 
     const handleScroll = () => {
-        const sectionTop = homeSection.offsetTop;
+        const sectionTop =
+            homeSection.getBoundingClientRect().top +
+            window.scrollY;
+
         const scrollDistance =
             homeSection.offsetHeight - window.innerHeight;
 
-        if (scrollDistance <= 0) return;
+        if (scrollDistance <= 0) {
+            targetFrame.current = 1;
+            return;
+        }
+
+        const relativeScroll = window.scrollY - sectionTop;
 
         const progress = Math.max(
             0,
-            Math.min(
-                1,
-                (window.scrollY - sectionTop) / scrollDistance
-            )
+            Math.min(1, relativeScroll / scrollDistance)
         );
 
         targetFrame.current =
@@ -178,6 +219,7 @@ useEffect(() => {
             )
         );
 
+        // All frame loads have finished before animation starts.
         if (
             imageCache.current[requestedFrame - 1] &&
             requestedFrame !== lastFrame.current
@@ -193,7 +235,9 @@ useEffect(() => {
         passive: true,
     });
 
+    // Synchronize the animation with the current scroll position.
     handleScroll();
+
     rafRef.current = requestAnimationFrame(animate);
 
     return () => {
@@ -201,6 +245,7 @@ useEffect(() => {
 
         if (rafRef.current !== null) {
             cancelAnimationFrame(rafRef.current);
+            rafRef.current = null;
         }
     };
 }, [isReady]);
@@ -210,7 +255,7 @@ const currentImage = imageCache.current[frame - 1];
 const currentImageSrc =
     currentImage?.src || getFramePath(1);
 
-// Show the loader until all frames have finished loading.
+// Keep the loader visible until all frames have finished loading.
 if (!isReady) {
     return (
         <div
