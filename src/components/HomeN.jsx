@@ -1,3 +1,4 @@
+
 /* eslint-disable react-hooks/exhaustive-deps */
 import {
     useEffect,
@@ -5,6 +6,7 @@ import {
     useRef,
     useState,
 } from "react";
+
 import Hero from "./Hero.jsx";
 import BirthdayCakeCard from "../cards/birthday.jsx";
 import BirthdayCakeCardMobile from "../cards/birthday_mobile.jsx";
@@ -18,162 +20,161 @@ import BabyShowerCakeDetail from "../cards/babyshower.jsx";
 import BabyShowerCakeDetailMobile from "../cards/babyshower_mobile.jsx";
 import { LoaderCircle } from "lucide-react";
 
+export const HomeN = () => {
+    const TOTAL_FRAMES = 380;
+    const BATCH_SIZE = 40;
 
-export const HomeN=()=> {
+    const [frame, setFrame] = useState(1);
+    const [isReady, setIsReady] = useState(false);
 
-const TOTAL_FRAMES = 314;
-const BATCH_SIZE = 40;
+    const targetFrame = useRef(1);
+    const currentFrame = useRef(1);
+    const lastFrame = useRef(1);
+    const rafRef = useRef(null);
 
-const [frame, setFrame] = useState(1);
-const [isReady, setIsReady] = useState(false);
+    const imageCache = useRef([]);
 
-const targetFrame = useRef(1);
-const currentFrame = useRef(1);
-const lastFrame = useRef(1);
-const rafRef = useRef(null);
+    const getFramePath = (frameNumber) =>
+        `/frames/frame_${String(frameNumber).padStart(4, "0")}.webp`;
 
-const imageCache = useRef([]);
-
-const getFramePath = (frameNumber) =>
-    `/frames/frame_${String(frameNumber).padStart(4, "0")}.webp`;
-
-// Reset scroll position before the page paints.
-useLayoutEffect(() => {
-    if ("scrollRestoration" in window.history) {
-        window.history.scrollRestoration = "manual";
-    }
-
-    window.scrollTo(0, 0);
-
-    const resetScroll = requestAnimationFrame(() => {
-        window.scrollTo(0, 0);
-    });
-
-    return () => {
-        cancelAnimationFrame(resetScroll);
-
+    // Reset the scroll position before the page paints.
+    useLayoutEffect(() => {
         if ("scrollRestoration" in window.history) {
-            window.history.scrollRestoration = "auto";
+            window.history.scrollRestoration = "manual";
         }
-    };
-}, []);
 
-// Load all 380 frames before removing the loader.
-useEffect(() => {
-    let cancelled = false;
+        window.scrollTo(0, 0);
 
-    const loadFrame = (frameNumber) =>
-        new Promise((resolve) => {
-            const image = new Image();
-            let settled = false;
-
-            const finish = (result) => {
-                if (settled) return;
-                settled = true;
-                resolve(result);
-            };
-
-            image.onload = () => finish(image);
-
-            image.onerror = () => {
-                console.error(
-                    `Failed to load frame ${frameNumber}:`,
-                    getFramePath(frameNumber)
-                );
-                finish(null);
-            };
-
-            image.src = getFramePath(frameNumber);
-
-            if (image.complete) {
-                finish(
-                    image.naturalWidth > 0 ? image : null
-                );
-            }
+        const resetScroll = requestAnimationFrame(() => {
+            window.scrollTo(0, 0);
         });
 
-    const loadAllFrames = async () => {
-        const images = new Array(TOTAL_FRAMES);
+        return () => {
+            cancelAnimationFrame(resetScroll);
 
-        for (
-            let start = 1;
-            start <= TOTAL_FRAMES;
-            start += BATCH_SIZE
-        ) {
-            if (cancelled) return;
+            if ("scrollRestoration" in window.history) {
+                window.history.scrollRestoration = "auto";
+            }
+        };
+    }, []);
 
-            const end = Math.min(
-                start + BATCH_SIZE - 1,
-                TOTAL_FRAMES
-            );
+    // Load every frame before removing the loader.
+    useEffect(() => {
+        let cancelled = false;
 
-            const batch = await Promise.all(
-                Array.from(
-                    { length: end - start + 1 },
-                    (_, index) => loadFrame(start + index)
-                )
-            );
+        const loadFrame = (frameNumber) =>
+            new Promise((resolve) => {
+                const image = new Image();
+                let settled = false;
 
-            batch.forEach((image, index) => {
-                images[start + index - 1] = image;
+                const finish = (result) => {
+                    if (settled) return;
+
+                    settled = true;
+                    resolve(result);
+                };
+
+                image.onload = () => finish(image);
+
+                image.onerror = () => {
+                    console.error(
+                        `Failed to load frame ${frameNumber}:`,
+                        getFramePath(frameNumber)
+                    );
+
+                    finish(null);
+                };
+
+                image.src = getFramePath(frameNumber);
+
+                if (image.complete) {
+                    finish(
+                        image.naturalWidth > 0 ? image : null
+                    );
+                }
             });
-        }
 
-        if (cancelled) return;
+        const loadAllFrames = async () => {
+            const images = new Array(TOTAL_FRAMES);
 
-        imageCache.current = images;
+            for (
+                let start = 1;
+                start <= TOTAL_FRAMES;
+                start += BATCH_SIZE
+            ) {
+                if (cancelled) return;
 
-        // Reset animation state before showing the website.
-        window.scrollTo(0, 0);
+                const end = Math.min(
+                    start + BATCH_SIZE - 1,
+                    TOTAL_FRAMES
+                );
 
-        requestAnimationFrame(() => {
+                const batch = await Promise.all(
+                    Array.from(
+                        { length: end - start + 1 },
+                        (_, index) => loadFrame(start + index)
+                    )
+                );
+
+                batch.forEach((image, index) => {
+                    images[start + index - 1] = image;
+                });
+            }
+
             if (cancelled) return;
 
-            window.scrollTo(0, 0);
+            imageCache.current = images;
 
+            // Initialize frame and scroll state before displaying the page.
             targetFrame.current = 1;
             currentFrame.current = 1;
             lastFrame.current = 1;
 
             setFrame(1);
-            setIsReady(true);
-        });
-    };
 
-    loadAllFrames();
+            window.scrollTo(0, 0);
 
-    return () => {
-        cancelled = true;
-    };
-}, []);
+            requestAnimationFrame(() => {
+                if (cancelled) return;
 
-// Lock scrolling while frames are loading.
-useEffect(() => {
-    document.body.style.overflow = isReady ? "" : "hidden";
-    document.documentElement.style.overflow = isReady
-        ? ""
-        : "hidden";
+                window.scrollTo(0, 0);
+                setIsReady(true);
+            });
+        };
 
-    return () => {
-        document.body.style.overflow = "";
-        document.documentElement.style.overflow = "";
-    };
-}, [isReady]);
+        loadAllFrames();
 
-// Animate frames according to page scrolling.
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    // Prevent scrolling while frames are loading.
+    useEffect(() => {
+        document.body.style.overflow = isReady ? "" : "hidden";
+        document.documentElement.style.overflow = isReady
+            ? ""
+            : "hidden";
+
+        return () => {
+            document.body.style.overflow = "";
+            document.documentElement.style.overflow = "";
+        };
+    }, [isReady]);
+
+    // Animate frames using the actual document scroll position.
+    
 useEffect(() => {
     if (!isReady) return;
 
-    const homeSection = document.querySelector(
-        "main#Home > section"
-    );
+    const homeSection = document.getElementById("HomeScroll");
 
     if (!homeSection) {
-        console.error(
-            'Animation section not found: main#Home > section'
-        );
+        console.error("HomeScroll section not found");
         return;
     }
+
+    let animationRunning = true;
 
     const handleScroll = () => {
         const sectionTop =
@@ -200,12 +201,14 @@ useEffect(() => {
     };
 
     const animate = () => {
+        if (!animationRunning) return;
+
         const difference =
             targetFrame.current - currentFrame.current;
 
-        currentFrame.current += difference * 0.1;
+        currentFrame.current += difference * 0.15;
 
-        if (Math.abs(difference) < 0.01) {
+        if (Math.abs(difference) < 0.05) {
             currentFrame.current = targetFrame.current;
         }
 
@@ -217,11 +220,9 @@ useEffect(() => {
             )
         );
 
-        // All frame loads have finished before animation starts.
-        if (
-            imageCache.current[requestedFrame - 1] &&
-            requestedFrame !== lastFrame.current
-        ) {
+        const image = imageCache.current[requestedFrame - 1];
+
+        if (image && requestedFrame !== lastFrame.current) {
             lastFrame.current = requestedFrame;
             setFrame(requestedFrame);
         }
@@ -233,13 +234,17 @@ useEffect(() => {
         passive: true,
     });
 
-    // Synchronize the animation with the current scroll position.
+    window.addEventListener("resize", handleScroll);
+
     handleScroll();
 
     rafRef.current = requestAnimationFrame(animate);
 
     return () => {
+        animationRunning = false;
+
         window.removeEventListener("scroll", handleScroll);
+        window.removeEventListener("resize", handleScroll);
 
         if (rafRef.current !== null) {
             cancelAnimationFrame(rafRef.current);
@@ -248,43 +253,43 @@ useEffect(() => {
     };
 }, [isReady]);
 
-const currentImage = imageCache.current[frame - 1];
 
-const currentImageSrc =
-    currentImage?.src || getFramePath(1);
+    const currentImage = imageCache.current[frame - 1];
 
-// Keep the loader visible until all frames have finished loading.
-if (!isReady) {
-    return (
-        <div
-            style={{
-                position: "fixed",
-                inset: 0,
-                width: "100%",
-                height: "100%",
-                backgroundColor: "rgba(0, 0, 0, 0.5)",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                zIndex: 9999,
-            }}
-        >
-            <LoaderCircle className="h-12 w-12 animate-spin" />
-        </div>
-    );
-}
+    const currentImageSrc =
+        currentImage?.src || getFramePath(1);
+
+    // Keep the loader visible until all frames finish loading.
+    if (!isReady) {
+        return (
+            <div
+                style={{
+                    position: "fixed",
+                    inset: 0,
+                    width: "100%",
+                    height: "100%",
+                    backgroundColor: "rgba(0, 0, 0, 0.5)",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    zIndex: 9999,
+                }}
+            >
+                <LoaderCircle className="h-12 w-12 animate-spin" />
+            </div>
+        );
+    }
 
     return (
         <>
-
+            {/* Fixed background frame */}
             <div className="fixed inset-0 z-0 h-screen w-screen overflow-hidden bg-black">
-               <img
+                <img
                     src={currentImageSrc}
                     alt=""
                     draggable="false"
                     className="absolute inset-0 h-full w-full select-none object-cover object-left md:object-center"
                 />
-               
             </div>
 
             <Hero frame={frame} />
@@ -308,5 +313,4 @@ if (!isReady) {
             </div>
         </>
     );
-}
-
+};
