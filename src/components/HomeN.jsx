@@ -27,13 +27,17 @@ export const HomeN = () => {
     const lastFrame = useRef(1);
     const rafRef = useRef(null);
 
+    const imageRef = useRef(null);
     const imageCache = useRef([]);
     const loadingFrames = useRef(new Map());
+
+    const priorityFrameRef = useRef(null);
+    const priorityLoadingRef = useRef(false);
 
     const getFramePath = (frameNumber) =>
         `/frames/frame_${String(frameNumber).padStart(4, "0")}.webp`;
 
-    // Load and decode an image, with retries for failed requests.
+    // Load and decode a frame before adding it to the cache.
     const loadFrame = (frameNumber, retries = 1) => {
         if (frameNumber < 1 || frameNumber > TOTAL_FRAMES) {
             return Promise.resolve(null);
@@ -75,13 +79,11 @@ export const HomeN = () => {
                         );
                     };
 
-                    image.onerror = () => {
-                        finish(null);
-                    };
+                    image.onerror = () => finish(null);
 
                     image.src = src;
 
-                    // Handle images already available in browser cache.
+                    // Handle an image already available in browser cache.
                     if (image.complete) {
                         finish(
                             image.naturalWidth > 0 ? image : null
@@ -90,46 +92,39 @@ export const HomeN = () => {
                 });
 
                 if (!loadedImage) {
-                    console.error(
-                        `Frame ${frameNumber} load attempt ${
-                            attempt + 1
-                        } failed:`,
+                    console.warn(
+                        `Frame ${frameNumber} failed to load:`,
                         src
                     );
-
                     continue;
                 }
 
-                // Decode before using the image when supported.
                 if (typeof loadedImage.decode === "function") {
                     try {
                         await loadedImage.decode();
                     } catch {
-                        // Some browsers reject decode even when the
-                        // image is loaded. Verify its actual dimensions.
+                        // Check dimensions below before accepting the image.
                     }
                 }
 
                 if (loadedImage.naturalWidth > 0) {
-                    imageCache.current[frameNumber - 1] =
-                        loadedImage;
-
+                    imageCache.current[frameNumber - 1] = loadedImage;
                     return loadedImage;
                 }
             }
 
-       
+            console.error(
+                `Unable to load frame ${frameNumber}:`,
+                getFramePath(frameNumber)
+            );
 
             return null;
         })();
 
         loadingFrames.current.set(frameNumber, request);
 
-        // Remove completed requests so failed frames can be retried.
         request.then(() => {
-            if (
-                loadingFrames.current.get(frameNumber) === request
-            ) {
+            if (loadingFrames.current.get(frameNumber) === request) {
                 loadingFrames.current.delete(frameNumber);
             }
         });
@@ -153,8 +148,57 @@ export const HomeN = () => {
         );
     };
 
-    // Load frame 1 before rendering the experience.
-    // Then load all remaining frames in batches.
+    // Render a cached frame without changing the React image source prop.
+    const renderFrame = (frameNumber) => {
+        const image = imageCache.current[frameNumber - 1];
+
+        if (!image || image.naturalWidth === 0) return;
+
+        const imageElement = imageRef.current;
+
+        if (imageElement && imageElement.src !== image.src) {
+            imageElement.src = image.src;
+        }
+
+        if (frameNumber !== lastFrame.current) {
+            lastFrame.current = frameNumber;
+            setFrame(frameNumber);
+        }
+    };
+
+    // Prioritize the latest requested frame without creating
+    // hundreds of simultaneous image requests during fast scrolling.
+    const requestPriorityFrame = (frameNumber) => {
+        priorityFrameRef.current = frameNumber;
+
+        if (priorityLoadingRef.current) return;
+
+        priorityLoadingRef.current = true;
+
+        const processPriorityFrames = async () => {
+            try {
+                while (priorityFrameRef.current !== null) {
+                    const nextFrame = priorityFrameRef.current;
+                    priorityFrameRef.current = null;
+
+                    if (!imageCache.current[nextFrame - 1]) {
+                        await loadFrame(nextFrame, 1);
+                    }
+                }
+            } finally {
+                priorityLoadingRef.current = false;
+
+                // Handle a request arriving as the previous one finishes.
+                if (priorityFrameRef.current !== null) {
+                    requestPriorityFrame(priorityFrameRef.current);
+                }
+            }
+        };
+
+        processPriorityFrames();
+    };
+
+    // Load frame 1 first, then progressively load the remaining frames.
     useEffect(() => {
         let cancelled = false;
 
@@ -163,33 +207,28 @@ export const HomeN = () => {
 
             if (cancelled) return;
 
-            if (firstImage) {
-                imageCache.current[0] = firstImage;
-
-                targetFrame.current = 1;
-                currentFrame.current = 1;
-                lastFrame.current = 1;
-
-                setFrame(1);
-                setIsReady(true);
-            } else {
-                // Avoid leaving the entire website stuck on the loader
-                // if the first frame cannot be retrieved.
+            if (!firstImage) {
                 console.error(
-                    "Frame 1 could not be loaded. Check the deployed image path:",
+                    "The first animation frame could not be loaded:",
                     getFramePath(1)
                 );
 
+                // Avoid a permanently stuck loader if the asset is missing.
                 setIsReady(true);
                 return;
             }
 
-            // Load the initial frames immediately after frame 1.
+            targetFrame.current = 1;
+            currentFrame.current = 1;
+            lastFrame.current = 1;
+
+            setFrame(1);
+            setIsReady(true);
+
             await loadBatch(2, INITIAL_FRAMES);
 
             if (cancelled) return;
 
-            // Load the remaining frames in batches.
             for (
                 let start = INITIAL_FRAMES + 1;
                 start <= TOTAL_FRAMES;
@@ -206,7 +245,6 @@ export const HomeN = () => {
 
                 if (cancelled) return;
 
-                // Give the browser a brief opportunity to render.
                 await new Promise((resolve) =>
                     setTimeout(resolve, 30)
                 );
@@ -214,7 +252,7 @@ export const HomeN = () => {
 
             if (!cancelled) {
                 console.log(
-                    "Frame loading complete:",
+                    "Frames loaded:",
                     imageCache.current.filter(Boolean).length,
                     "of",
                     TOTAL_FRAMES
@@ -229,7 +267,7 @@ export const HomeN = () => {
         };
     }, []);
 
-    // Start the page at the top and disable automatic scroll restoration.
+    // Reset scroll position when the page is initialized.
     useEffect(() => {
         const previousRestoration = window.history.scrollRestoration;
 
@@ -253,7 +291,7 @@ export const HomeN = () => {
         };
     }, []);
 
-    // Prevent scrolling until the first frame is ready.
+    // Lock page scrolling until the first frame is ready.
     useEffect(() => {
         if (isReady) {
             document.body.style.overflow = "";
@@ -275,7 +313,7 @@ export const HomeN = () => {
         };
     }, [isReady]);
 
-    // Animate frames according to the Home section's scroll progress.
+    // Keep the existing scroll-to-frame calculation and interpolation.
     useEffect(() => {
         if (!isReady) return;
 
@@ -284,9 +322,7 @@ export const HomeN = () => {
         );
 
         if (!homeSection) {
-            console.error(
-                'Scroll animation section not found. Expected "main#Home > section".'
-            );
+            console.error("Animation section not found.");
             return;
         }
 
@@ -336,14 +372,16 @@ export const HomeN = () => {
                 )
             );
 
-            let displayFrame = requestedFrame;
+            if (imageCache.current[requestedFrame - 1]) {
+                renderFrame(requestedFrame);
+            } else {
+                // Load the frame currently needed by the animation first.
+                requestPriorityFrame(requestedFrame);
 
-            // If the requested frame is not loaded yet, find the
-            // closest available frame to avoid a blank background.
-            if (!imageCache.current[requestedFrame - 1]) {
-                displayFrame = lastFrame.current;
+                // Keep displaying the nearest already-loaded frame.
+                let displayFrame = lastFrame.current;
 
-                for (let distance = 1; distance <= TOTAL_FRAMES; distance++) {
+                for (let distance = 1; distance <= 10; distance++) {
                     const forward = requestedFrame + distance;
                     const backward = requestedFrame - distance;
 
@@ -363,14 +401,8 @@ export const HomeN = () => {
                         break;
                     }
                 }
-            }
 
-            if (
-                imageCache.current[displayFrame - 1] &&
-                displayFrame !== lastFrame.current
-            ) {
-                lastFrame.current = displayFrame;
-                setFrame(displayFrame);
+                renderFrame(displayFrame);
             }
 
             rafRef.current = requestAnimationFrame(animate);
@@ -399,11 +431,6 @@ export const HomeN = () => {
         };
     }, [isReady]);
 
-    const currentImage = imageCache.current[frame - 1];
-
-    const currentImageSrc =
-        currentImage?.src || getFramePath(1);
-
     if (!isReady) {
         return (
             <div
@@ -428,15 +455,15 @@ export const HomeN = () => {
         <>
             <div className="fixed inset-0 z-0 h-screen w-screen overflow-hidden bg-black">
                 <img
-                    key={currentImageSrc}
-                    src={currentImageSrc}
+                    ref={imageRef}
+                    src={getFramePath(1)}
                     alt=""
                     draggable="false"
                     className="absolute inset-0 h-full w-full select-none object-cover object-left md:object-center"
                     onError={() => {
                         console.error(
-                            "Displayed frame failed to render:",
-                            currentImageSrc
+                            "Background image failed:",
+                            imageRef.current?.src
                         );
                     }}
                 />
