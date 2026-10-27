@@ -1,6 +1,6 @@
 
 import "./App.css";
-import {Home} from "./components/Home.jsx";
+import {HomeN} from "./components/HomeN.jsx";
 import Navbar from "./components/navbar.jsx";
 import Gallery from "./components/gallery.jsx";
 import Testimonials from "./components/testimonials.jsx";
@@ -14,9 +14,9 @@ function App() {
       <Navbar />
 
       <main id="Home" className="relative w-full bg-black">
-        <section id="HomeScroll" className="relative h-[600vh] ">
+        <section id="HomeScroll" className="relative h-[500vh] ">
           <div className="sticky top-0 h-screen overflow-hidden">
-            <Home/>
+            <HomeN/>
           </div>
         </section>
       </main>
